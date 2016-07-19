@@ -1,0 +1,4972 @@
+#+TITLE: 
+#+AUTHOR: Luis Felipe Millani, Lucas Mello Schnorr
+
+#+STARTUP: overview indent
+#+LANGUAGE: pt-br
+#+OPTIONS: H:3 creator:nil timestamp:nil skip:nil toc:nil num:t ^:nil ~:~
+#+OPTIONS: author:nil title:nil date:nil
+#+TAGS: noexport(n) deprecated(d) ignore(i)
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+
+#+LATEX_CLASS: llncs
+#+LATEX_CLASS_OPTIONS: 
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{subfigure}
+#+LATEX_HEADER: \usepackage{tabulary}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{mathtools}
+#+LATEX_HEADER: \usepackage{algorithm}
+#+LATEX_HEADER: \usepackage{algorithmic}
+#+LATEX_HEADER: \newcommand{\prettysmall}{\fontsize{6.5}{6.5}\selectfont}
+#+LATEX_HEADER: \newcommand{\prettysmallbis}{\fontsize{7}{7}\selectfont}
+#+LATEX_HEADER: \newcommand{\mtilde}{~}
+
+#+LATEX_HEADER: \usepackage{llncsdoc}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{palatino}
+#+LATEX_HEADER: \usepackage{hyperref}
+#+LATEX_HEADER: \usepackage{cleveref}
+#+LATEX_HEADER: \usepackage{booktabs}
+#+LATEX_HEADER: \usepackage[normalem]{ulem}
+#+LATEX_HEADER: \usepackage{xspace}
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \graphicspath{{img/}{img/}}
+#+LATEX_HEADER: \hypersetup{hidelinks = true}
+#+LATEX_HEADER: \urlstyle{rm}
+
+#+BEGIN_LaTeX
+\title{Computation-Aware Dynamic Frequency Scaling: Parsimonious Evaluation of the Time-Energy Trade-off Using Design of Experiments}
+\author{Luis Felipe Millani, Lucas Mello Schnorr}
+\institute{Informatics Institute –- Federal University of Rio Grande do Sul (UFRGS) \\
+Caixa Postal 15064 –- CEP 91501-970 Porto Alegre -- RS -- Brazil\\
+\email{\{lfgmillani,schnorr\}@inf.ufrgs.br}}
+\maketitle
+#+END_LaTeX
+
+                                                      
+#+BEGIN_LaTeX
+\begin{abstract}
+#+END_LaTeX
+
+A promising approach to improve the energy-efficiency of HPC
+applications is to apply energy-saving techniques for different code
+regions according to their characteristics (blocking communication,
+load imbalance). Since most applications have many parallel code regions,
+this strategy requires extensive experimental time to find all the
+time-energy trade-offs for a given application.  In this paper we make
+use of Design of Experiments (DoE) to (1) reduce the experimental time
+considering a parsimonious evaluation of execution time and energy;
+and (2) define the Pareto front with all interesting time-energy
+trade-offs. We report the use of our methodology for seven benchmarks,
+each with interesting Pareto fronts with distinct shapes. Among them,
+out of the 25 parallel regions of the MiniFE benchmark, we detect
+configurations which reduce energy in 9.27% with a non-significant
+penalty in runtime when compared with using the high frequency for all
+regions; and, for the Graph500 benchmark with 17 parallel regions,
+5.59% execution time reduction with a non-significant increase in
+energy consumption, when comparing against running all regions in the
+lowest frequency.
+
+#+BEGIN_LaTeX
+\end{abstract}
+#+END_LaTeX
+
+* How to Reproduce This Paper (Start Here)                         :noexport:
+
+Thank you for your interest in reproducible research. We give here
+instructions on how to reproduce the plots based on the measurements
+we have made in the platforms described in the paper. Only the
+analysis plots are available (all measurements are in CSV files in the
+=data= directory). We are continuing this work to try to make
+experimentation also reproducible through org mode.
+
+1. Tangle this file (C-c C-v t)
+2. Follow instructions on [[*Configuring org-mode to know how to export the llncs class][Configuring org-mode to know how to export the llncs class]]
+3. Install necessary R packages
+   #+begin_src R :results output :session :exports both
+   mirror = "http://cran.us.r-project.org"
+   packages <- c("ggplot2", "ggrepel", "plyr", "FrF2");
+   packages <- packages[sapply(packages, function(x){0==length(find.package(x,quiet=T))})]
+   if(length(packages) > 0) install.packages(packages, repos=mirror)
+   #+end_src
+
+   #+RESULTS:
+
+4. Run the [[*R backend code][R backend code]] (load all data files)
+5. [[*Generate analysis plots][Generate analysis plots]]
+6. Export this file to latex (C-c C-e l l)
+7. Run =pdflatex= then =bibtex=
+   #+begin_src sh :results silent :session :exports none
+   pdflatex reppar2016.tex
+   bibtex reppar2016
+   pdflatex reppar2016.tex
+   pdflatex reppar2016.tex
+   #+end_src
+
+* LLNS style files                                                 :noexport:
+
+#+begin_src tex :tangle llncs.cls
+% LLNCS DOCUMENT CLASS -- version 2.19 (31-Mar-2014)
+% Springer Verlag LaTeX2e support for Lecture Notes in Computer Science
+%
+%%
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+%%
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesClass{llncs}[2014/03/31 v2.19
+^^J LaTeX document class for Lecture Notes in Computer Science]
+% Options
+\let\if@envcntreset\iffalse
+\DeclareOption{envcountreset}{\let\if@envcntreset\iftrue}
+\DeclareOption{citeauthoryear}{\let\citeauthoryear=Y}
+\DeclareOption{oribibl}{\let\oribibl=Y}
+\let\if@custvec\iftrue
+\DeclareOption{orivec}{\let\if@custvec\iffalse}
+\let\if@envcntsame\iffalse
+\DeclareOption{envcountsame}{\let\if@envcntsame\iftrue}
+\let\if@envcntsect\iffalse
+\DeclareOption{envcountsect}{\let\if@envcntsect\iftrue}
+\let\if@runhead\iffalse
+\DeclareOption{runningheads}{\let\if@runhead\iftrue}
+
+\let\if@openright\iftrue
+\let\if@openbib\iffalse
+\DeclareOption{openbib}{\let\if@openbib\iftrue}
+
+% languages
+\let\switcht@@therlang\relax
+\def\ds@deutsch{\def\switcht@@therlang{\switcht@deutsch}}
+\def\ds@francais{\def\switcht@@therlang{\switcht@francais}}
+
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
+
+\ProcessOptions
+
+\LoadClass[twoside]{article}
+\RequirePackage{multicol} % needed for the list of participants, index
+\RequirePackage{aliascnt}
+
+\setlength{\textwidth}{12.2cm}
+\setlength{\textheight}{19.3cm}
+\renewcommand\@pnumwidth{2em}
+\renewcommand\@tocrmarg{3.5em}
+%
+\def\@dottedtocline#1#2#3#4#5{%
+  \ifnum #1>\c@tocdepth \else
+    \vskip \z@ \@plus.2\p@
+    {\leftskip #2\relax \rightskip \@tocrmarg \advance\rightskip by 0pt plus 2cm
+               \parfillskip -\rightskip \pretolerance=10000
+     \parindent #2\relax\@afterindenttrue
+     \interlinepenalty\@M
+     \leavevmode
+     \@tempdima #3\relax
+     \advance\leftskip \@tempdima \null\nobreak\hskip -\leftskip
+     {#4}\nobreak
+     \leaders\hbox{$\m@th
+        \mkern \@dotsep mu\hbox{.}\mkern \@dotsep
+        mu$}\hfill
+     \nobreak
+     \hb@xt@\@pnumwidth{\hfil\normalfont \normalcolor #5}%
+     \par}%
+  \fi}
+%
+\def\switcht@albion{%
+\def\abstractname{Abstract.}%
+\def\ackname{Acknowledgement.}%
+\def\andname{and}%
+\def\lastandname{\unskip, and}%
+\def\appendixname{Appendix}%
+\def\chaptername{Chapter}%
+\def\claimname{Claim}%
+\def\conjecturename{Conjecture}%
+\def\contentsname{Table of Contents}%
+\def\corollaryname{Corollary}%
+\def\definitionname{Definition}%
+\def\examplename{Example}%
+\def\exercisename{Exercise}%
+\def\figurename{Fig.}%
+\def\keywordname{{\bf Keywords:}}%
+\def\indexname{Index}%
+\def\lemmaname{Lemma}%
+\def\contriblistname{List of Contributors}%
+\def\listfigurename{List of Figures}%
+\def\listtablename{List of Tables}%
+\def\mailname{{\it Correspondence to\/}:}%
+\def\noteaddname{Note added in proof}%
+\def\notename{Note}%
+\def\partname{Part}%
+\def\problemname{Problem}%
+\def\proofname{Proof}%
+\def\propertyname{Property}%
+\def\propositionname{Proposition}%
+\def\questionname{Question}%
+\def\remarkname{Remark}%
+\def\seename{see}%
+\def\solutionname{Solution}%
+\def\subclassname{{\it Subject Classifications\/}:}%
+\def\tablename{Table}%
+\def\theoremname{Theorem}}
+\switcht@albion
+% Names of theorem like environments are already defined
+% but must be translated if another language is chosen
+%
+% French section
+\def\switcht@francais{%\typeout{On parle francais.}%
+ \def\abstractname{R\'esum\'e.}%
+ \def\ackname{Remerciements.}%
+ \def\andname{et}%
+ \def\lastandname{ et}%
+ \def\appendixname{Appendice}%
+ \def\chaptername{Chapitre}%
+ \def\claimname{Pr\'etention}%
+ \def\conjecturename{Hypoth\`ese}%
+ \def\contentsname{Table des mati\`eres}%
+ \def\corollaryname{Corollaire}%
+ \def\definitionname{D\'efinition}%
+ \def\examplename{Exemple}%
+ \def\exercisename{Exercice}%
+ \def\figurename{Fig.}%
+ \def\keywordname{{\bf Mots-cl\'e:}}%
+ \def\indexname{Index}%
+ \def\lemmaname{Lemme}%
+ \def\contriblistname{Liste des contributeurs}%
+ \def\listfigurename{Liste des figures}%
+ \def\listtablename{Liste des tables}%
+ \def\mailname{{\it Correspondence to\/}:}%
+ \def\noteaddname{Note ajout\'ee \`a l'\'epreuve}%
+ \def\notename{Remarque}%
+ \def\partname{Partie}%
+ \def\problemname{Probl\`eme}%
+ \def\proofname{Preuve}%
+ \def\propertyname{Caract\'eristique}%
+%\def\propositionname{Proposition}%
+ \def\questionname{Question}%
+ \def\remarkname{Remarque}%
+ \def\seename{voir}%
+ \def\solutionname{Solution}%
+ \def\subclassname{{\it Subject Classifications\/}:}%
+ \def\tablename{Tableau}%
+ \def\theoremname{Th\'eor\`eme}%
+}
+%
+% German section
+\def\switcht@deutsch{%\typeout{Man spricht deutsch.}%
+ \def\abstractname{Zusammenfassung.}%
+ \def\ackname{Danksagung.}%
+ \def\andname{und}%
+ \def\lastandname{ und}%
+ \def\appendixname{Anhang}%
+ \def\chaptername{Kapitel}%
+ \def\claimname{Behauptung}%
+ \def\conjecturename{Hypothese}%
+ \def\contentsname{Inhaltsverzeichnis}%
+ \def\corollaryname{Korollar}%
+%\def\definitionname{Definition}%
+ \def\examplename{Beispiel}%
+ \def\exercisename{\"Ubung}%
+ \def\figurename{Abb.}%
+ \def\keywordname{{\bf Schl\"usselw\"orter:}}%
+ \def\indexname{Index}%
+%\def\lemmaname{Lemma}%
+ \def\contriblistname{Mitarbeiter}%
+ \def\listfigurename{Abbildungsverzeichnis}%
+ \def\listtablename{Tabellenverzeichnis}%
+ \def\mailname{{\it Correspondence to\/}:}%
+ \def\noteaddname{Nachtrag}%
+ \def\notename{Anmerkung}%
+ \def\partname{Teil}%
+%\def\problemname{Problem}%
+ \def\proofname{Beweis}%
+ \def\propertyname{Eigenschaft}%
+%\def\propositionname{Proposition}%
+ \def\questionname{Frage}%
+ \def\remarkname{Anmerkung}%
+ \def\seename{siehe}%
+ \def\solutionname{L\"osung}%
+ \def\subclassname{{\it Subject Classifications\/}:}%
+ \def\tablename{Tabelle}%
+%\def\theoremname{Theorem}%
+}
+
+% Ragged bottom for the actual page
+\def\thisbottomragged{\def\@textbottom{\vskip\z@ plus.0001fil
+\global\let\@textbottom\relax}}
+
+\renewcommand\small{%
+   \@setfontsize\small\@ixpt{11}%
+   \abovedisplayskip 8.5\p@ \@plus3\p@ \@minus4\p@
+   \abovedisplayshortskip \z@ \@plus2\p@
+   \belowdisplayshortskip 4\p@ \@plus2\p@ \@minus2\p@
+   \def\@listi{\leftmargin\leftmargini
+               \parsep 0\p@ \@plus1\p@ \@minus\p@
+               \topsep 8\p@ \@plus2\p@ \@minus4\p@
+               \itemsep0\p@}%
+   \belowdisplayskip \abovedisplayskip
+}
+
+\frenchspacing
+\widowpenalty=10000
+\clubpenalty=10000
+
+\setlength\oddsidemargin   {63\p@}
+\setlength\evensidemargin  {63\p@}
+\setlength\marginparwidth  {90\p@}
+
+\setlength\headsep   {16\p@}
+
+\setlength\footnotesep{7.7\p@}
+\setlength\textfloatsep{8mm\@plus 2\p@ \@minus 4\p@}
+\setlength\intextsep   {8mm\@plus 2\p@ \@minus 2\p@}
+
+\setcounter{secnumdepth}{2}
+
+\newcounter {chapter}
+\renewcommand\thechapter      {\@arabic\c@chapter}
+
+\newif\if@mainmatter \@mainmattertrue
+\newcommand\frontmatter{\cleardoublepage
+            \@mainmatterfalse\pagenumbering{Roman}}
+\newcommand\mainmatter{\cleardoublepage
+       \@mainmattertrue\pagenumbering{arabic}}
+\newcommand\backmatter{\if@openright\cleardoublepage\else\clearpage\fi
+      \@mainmatterfalse}
+
+\renewcommand\part{\cleardoublepage
+                 \thispagestyle{empty}%
+                 \if@twocolumn
+                     \onecolumn
+                     \@tempswatrue
+                   \else
+                     \@tempswafalse
+                 \fi
+                 \null\vfil
+                 \secdef\@part\@spart}
+
+\def\@part[#1]#2{%
+    \ifnum \c@secnumdepth >-2\relax
+      \refstepcounter{part}%
+      \addcontentsline{toc}{part}{\thepart\hspace{1em}#1}%
+    \else
+      \addcontentsline{toc}{part}{#1}%
+    \fi
+    \markboth{}{}%
+    {\centering
+     \interlinepenalty \@M
+     \normalfont
+     \ifnum \c@secnumdepth >-2\relax
+       \huge\bfseries \partname~\thepart
+       \par
+       \vskip 20\p@
+     \fi
+     \Huge \bfseries #2\par}%
+    \@endpart}
+\def\@spart#1{%
+    {\centering
+     \interlinepenalty \@M
+     \normalfont
+     \Huge \bfseries #1\par}%
+    \@endpart}
+\def\@endpart{\vfil\newpage
+              \if@twoside
+                \null
+                \thispagestyle{empty}%
+                \newpage
+              \fi
+              \if@tempswa
+                \twocolumn
+              \fi}
+
+\newcommand\chapter{\clearpage
+                    \thispagestyle{empty}%
+                    \global\@topnum\z@
+                    \@afterindentfalse
+                    \secdef\@chapter\@schapter}
+\def\@chapter[#1]#2{\ifnum \c@secnumdepth >\m@ne
+                       \if@mainmatter
+                         \refstepcounter{chapter}%
+                         \typeout{\@chapapp\space\thechapter.}%
+                         \addcontentsline{toc}{chapter}%
+                                  {\protect\numberline{\thechapter}#1}%
+                       \else
+                         \addcontentsline{toc}{chapter}{#1}%
+                       \fi
+                    \else
+                      \addcontentsline{toc}{chapter}{#1}%
+                    \fi
+                    \chaptermark{#1}%
+                    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+                    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+                    \if@twocolumn
+                      \@topnewpage[\@makechapterhead{#2}]%
+                    \else
+                      \@makechapterhead{#2}%
+                      \@afterheading
+                    \fi}
+\def\@makechapterhead#1{%
+% \vspace*{50\p@}%
+  {\centering
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \large\bfseries \@chapapp{} \thechapter
+        \par\nobreak
+        \vskip 20\p@
+      \fi
+    \fi
+    \interlinepenalty\@M
+    \Large \bfseries #1\par\nobreak
+    \vskip 40\p@
+  }}
+\def\@schapter#1{\if@twocolumn
+                   \@topnewpage[\@makeschapterhead{#1}]%
+                 \else
+                   \@makeschapterhead{#1}%
+                   \@afterheading
+                 \fi}
+\def\@makeschapterhead#1{%
+% \vspace*{50\p@}%
+  {\centering
+    \normalfont
+    \interlinepenalty\@M
+    \Large \bfseries  #1\par\nobreak
+    \vskip 40\p@
+  }}
+
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+                       {-18\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {12\p@ \@plus 4\p@ \@minus 4\p@}%
+                       {\normalfont\large\bfseries\boldmath
+                        \rightskip=\z@ \@plus 8em\pretolerance=10000 }}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                       {-18\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {8\p@ \@plus 4\p@ \@minus 4\p@}%
+                       {\normalfont\normalsize\bfseries\boldmath
+                        \rightskip=\z@ \@plus 8em\pretolerance=10000 }}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+                       {-18\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {-0.5em \@plus -0.22em \@minus -0.1em}%
+                       {\normalfont\normalsize\bfseries\boldmath}}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+                       {-12\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {-0.5em \@plus -0.22em \@minus -0.1em}%
+                       {\normalfont\normalsize\itshape}}
+\renewcommand\subparagraph[1]{\typeout{LLNCS warning: You should not use
+                  \string\subparagraph\space with this class}\vskip0.5cm
+You should not use \verb|\subparagraph| with this class.\vskip0.5cm}
+
+\DeclareMathSymbol{\Gamma}{\mathalpha}{letters}{"00}
+\DeclareMathSymbol{\Delta}{\mathalpha}{letters}{"01}
+\DeclareMathSymbol{\Theta}{\mathalpha}{letters}{"02}
+\DeclareMathSymbol{\Lambda}{\mathalpha}{letters}{"03}
+\DeclareMathSymbol{\Xi}{\mathalpha}{letters}{"04}
+\DeclareMathSymbol{\Pi}{\mathalpha}{letters}{"05}
+\DeclareMathSymbol{\Sigma}{\mathalpha}{letters}{"06}
+\DeclareMathSymbol{\Upsilon}{\mathalpha}{letters}{"07}
+\DeclareMathSymbol{\Phi}{\mathalpha}{letters}{"08}
+\DeclareMathSymbol{\Psi}{\mathalpha}{letters}{"09}
+\DeclareMathSymbol{\Omega}{\mathalpha}{letters}{"0A}
+
+\let\footnotesize\small
+
+\if@custvec
+\def\vec#1{\mathchoice{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\textstyle#1$}}
+{\mbox{\boldmath$\scriptstyle#1$}}
+{\mbox{\boldmath$\scriptscriptstyle#1$}}}
+\fi
+
+\def\squareforqed{\hbox{\rlap{$\sqcap$}$\sqcup$}}
+\def\qed{\ifmmode\squareforqed\else{\unskip\nobreak\hfil
+\penalty50\hskip1em\null\nobreak\hfil\squareforqed
+\parfillskip=0pt\finalhyphendemerits=0\endgraf}\fi}
+
+\def\getsto{\mathrel{\mathchoice {\vcenter{\offinterlineskip
+\halign{\hfil
+$\displaystyle##$\hfil\cr\gets\cr\to\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr\gets
+\cr\to\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr\gets
+\cr\to\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr
+\gets\cr\to\cr}}}}}
+\def\lid{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr<\cr\noalign{\vskip1.2pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr<\cr
+\noalign{\vskip1.2pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr<\cr
+\noalign{\vskip1pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr
+<\cr
+\noalign{\vskip0.9pt}=\cr}}}}}
+\def\gid{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr>\cr\noalign{\vskip1.2pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr>\cr
+\noalign{\vskip1.2pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr>\cr
+\noalign{\vskip1pt}=\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr
+>\cr
+\noalign{\vskip0.9pt}=\cr}}}}}
+\def\grole{\mathrel{\mathchoice {\vcenter{\offinterlineskip
+\halign{\hfil
+$\displaystyle##$\hfil\cr>\cr\noalign{\vskip-1pt}<\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr
+>\cr\noalign{\vskip-1pt}<\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr
+>\cr\noalign{\vskip-0.8pt}<\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr
+>\cr\noalign{\vskip-0.3pt}<\cr}}}}}
+\def\bbbr{{\rm I\!R}} %reelle Zahlen
+\def\bbbm{{\rm I\!M}}
+\def\bbbn{{\rm I\!N}} %natuerliche Zahlen
+\def\bbbf{{\rm I\!F}}
+\def\bbbh{{\rm I\!H}}
+\def\bbbk{{\rm I\!K}}
+\def\bbbp{{\rm I\!P}}
+\def\bbbone{{\mathchoice {\rm 1\mskip-4mu l} {\rm 1\mskip-4mu l}
+{\rm 1\mskip-4.5mu l} {\rm 1\mskip-5mu l}}}
+\def\bbbc{{\mathchoice {\setbox0=\hbox{$\displaystyle\rm C$}\hbox{\hbox
+to0pt{\kern0.4\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\textstyle\rm C$}\hbox{\hbox
+to0pt{\kern0.4\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptstyle\rm C$}\hbox{\hbox
+to0pt{\kern0.4\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptscriptstyle\rm C$}\hbox{\hbox
+to0pt{\kern0.4\wd0\vrule height0.9\ht0\hss}\box0}}}}
+\def\bbbq{{\mathchoice {\setbox0=\hbox{$\displaystyle\rm
+Q$}\hbox{\raise
+0.15\ht0\hbox to0pt{\kern0.4\wd0\vrule height0.8\ht0\hss}\box0}}
+{\setbox0=\hbox{$\textstyle\rm Q$}\hbox{\raise
+0.15\ht0\hbox to0pt{\kern0.4\wd0\vrule height0.8\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptstyle\rm Q$}\hbox{\raise
+0.15\ht0\hbox to0pt{\kern0.4\wd0\vrule height0.7\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptscriptstyle\rm Q$}\hbox{\raise
+0.15\ht0\hbox to0pt{\kern0.4\wd0\vrule height0.7\ht0\hss}\box0}}}}
+\def\bbbt{{\mathchoice {\setbox0=\hbox{$\displaystyle\rm
+T$}\hbox{\hbox to0pt{\kern0.3\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\textstyle\rm T$}\hbox{\hbox
+to0pt{\kern0.3\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptstyle\rm T$}\hbox{\hbox
+to0pt{\kern0.3\wd0\vrule height0.9\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptscriptstyle\rm T$}\hbox{\hbox
+to0pt{\kern0.3\wd0\vrule height0.9\ht0\hss}\box0}}}}
+\def\bbbs{{\mathchoice
+{\setbox0=\hbox{$\displaystyle     \rm S$}\hbox{\raise0.5\ht0\hbox
+to0pt{\kern0.35\wd0\vrule height0.45\ht0\hss}\hbox
+to0pt{\kern0.55\wd0\vrule height0.5\ht0\hss}\box0}}
+{\setbox0=\hbox{$\textstyle        \rm S$}\hbox{\raise0.5\ht0\hbox
+to0pt{\kern0.35\wd0\vrule height0.45\ht0\hss}\hbox
+to0pt{\kern0.55\wd0\vrule height0.5\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptstyle      \rm S$}\hbox{\raise0.5\ht0\hbox
+to0pt{\kern0.35\wd0\vrule height0.45\ht0\hss}\raise0.05\ht0\hbox
+to0pt{\kern0.5\wd0\vrule height0.45\ht0\hss}\box0}}
+{\setbox0=\hbox{$\scriptscriptstyle\rm S$}\hbox{\raise0.5\ht0\hbox
+to0pt{\kern0.4\wd0\vrule height0.45\ht0\hss}\raise0.05\ht0\hbox
+to0pt{\kern0.55\wd0\vrule height0.45\ht0\hss}\box0}}}}
+\def\bbbz{{\mathchoice {\hbox{$\mathsf\textstyle Z\kern-0.4em Z$}}
+{\hbox{$\mathsf\textstyle Z\kern-0.4em Z$}}
+{\hbox{$\mathsf\scriptstyle Z\kern-0.3em Z$}}
+{\hbox{$\mathsf\scriptscriptstyle Z\kern-0.2em Z$}}}}
+
+\let\ts\,
+
+\setlength\leftmargini  {17\p@}
+\setlength\leftmargin    {\leftmargini}
+\setlength\leftmarginii  {\leftmargini}
+\setlength\leftmarginiii {\leftmargini}
+\setlength\leftmarginiv  {\leftmargini}
+\setlength  \labelsep  {.5em}
+\setlength  \labelwidth{\leftmargini}
+\addtolength\labelwidth{-\labelsep}
+
+\def\@listI{\leftmargin\leftmargini
+            \parsep 0\p@ \@plus1\p@ \@minus\p@
+            \topsep 8\p@ \@plus2\p@ \@minus4\p@
+            \itemsep0\p@}
+\let\@listi\@listI
+\@listi
+\def\@listii {\leftmargin\leftmarginii
+              \labelwidth\leftmarginii
+              \advance\labelwidth-\labelsep
+              \topsep    0\p@ \@plus2\p@ \@minus\p@}
+\def\@listiii{\leftmargin\leftmarginiii
+              \labelwidth\leftmarginiii
+              \advance\labelwidth-\labelsep
+              \topsep    0\p@ \@plus\p@\@minus\p@
+              \parsep    \z@
+              \partopsep \p@ \@plus\z@ \@minus\p@}
+
+\renewcommand\labelitemi{\normalfont\bfseries --}
+\renewcommand\labelitemii{$\m@th\bullet$}
+
+\setlength\arraycolsep{1.4\p@}
+\setlength\tabcolsep{1.4\p@}
+
+\def\tableofcontents{\chapter*{\contentsname\@mkboth{{\contentsname}}%
+                                                    {{\contentsname}}}
+ \def\authcount##1{\setcounter{auco}{##1}\setcounter{@auth}{1}}
+ \def\lastand{\ifnum\value{auco}=2\relax
+                 \unskip{} \andname\
+              \else
+                 \unskip \lastandname\
+              \fi}%
+ \def\and{\stepcounter{@auth}\relax
+          \ifnum\value{@auth}=\value{auco}%
+             \lastand
+          \else
+             \unskip,
+          \fi}%
+ \@starttoc{toc}\if@restonecol\twocolumn\fi}
+
+\def\l@part#1#2{\addpenalty{\@secpenalty}%
+   \addvspace{2em plus\p@}%  % space above part line
+   \begingroup
+     \parindent \z@
+     \rightskip \z@ plus 5em
+     \hrule\vskip5pt
+     \large               % same size as for a contribution heading
+     \bfseries\boldmath   % set line in boldface
+     \leavevmode          % TeX command to enter horizontal mode.
+     #1\par
+     \vskip5pt
+     \hrule
+     \vskip1pt
+     \nobreak             % Never break after part entry
+   \endgroup}
+
+\def\@dotsep{2}
+
+\let\phantomsection=\relax
+
+\def\hyperhrefextend{\ifx\hyper@anchor\@undefined\else
+{}\fi}
+
+\def\addnumcontentsmark#1#2#3{%
+\addtocontents{#1}{\protect\contentsline{#2}{\protect\numberline
+                     {\thechapter}#3}{\thepage}\hyperhrefextend}}%
+\def\addcontentsmark#1#2#3{%
+\addtocontents{#1}{\protect\contentsline{#2}{#3}{\thepage}\hyperhrefextend}}%
+\def\addcontentsmarkwop#1#2#3{%
+\addtocontents{#1}{\protect\contentsline{#2}{#3}{0}\hyperhrefextend}}%
+
+\def\@adcmk[#1]{\ifcase #1 \or
+\def\@gtempa{\addnumcontentsmark}%
+  \or    \def\@gtempa{\addcontentsmark}%
+  \or    \def\@gtempa{\addcontentsmarkwop}%
+  \fi\@gtempa{toc}{chapter}%
+}
+\def\addtocmark{%
+\phantomsection
+\@ifnextchar[{\@adcmk}{\@adcmk[3]}%
+}
+
+\def\l@chapter#1#2{\addpenalty{-\@highpenalty}
+ \vskip 1.0em plus 1pt \@tempdima 1.5em \begingroup
+ \parindent \z@ \rightskip \@tocrmarg
+ \advance\rightskip by 0pt plus 2cm
+ \parfillskip -\rightskip \pretolerance=10000
+ \leavevmode \advance\leftskip\@tempdima \hskip -\leftskip
+ {\large\bfseries\boldmath#1}\ifx0#2\hfil\null
+ \else
+      \nobreak
+      \leaders\hbox{$\m@th \mkern \@dotsep mu.\mkern
+      \@dotsep mu$}\hfill
+      \nobreak\hbox to\@pnumwidth{\hss #2}%
+ \fi\par
+ \penalty\@highpenalty \endgroup}
+
+\def\l@title#1#2{\addpenalty{-\@highpenalty}
+ \addvspace{8pt plus 1pt}
+ \@tempdima \z@
+ \begingroup
+ \parindent \z@ \rightskip \@tocrmarg
+ \advance\rightskip by 0pt plus 2cm
+ \parfillskip -\rightskip \pretolerance=10000
+ \leavevmode \advance\leftskip\@tempdima \hskip -\leftskip
+ #1\nobreak
+ \leaders\hbox{$\m@th \mkern \@dotsep mu.\mkern
+ \@dotsep mu$}\hfill
+ \nobreak\hbox to\@pnumwidth{\hss #2}\par
+ \penalty\@highpenalty \endgroup}
+
+\def\l@author#1#2{\addpenalty{\@highpenalty}
+ \@tempdima=15\p@ %\z@
+ \begingroup
+ \parindent \z@ \rightskip \@tocrmarg
+ \advance\rightskip by 0pt plus 2cm
+ \pretolerance=10000
+ \leavevmode \advance\leftskip\@tempdima %\hskip -\leftskip
+ \textit{#1}\par
+ \penalty\@highpenalty \endgroup}
+
+\setcounter{tocdepth}{0}
+\newdimen\tocchpnum
+\newdimen\tocsecnum
+\newdimen\tocsectotal
+\newdimen\tocsubsecnum
+\newdimen\tocsubsectotal
+\newdimen\tocsubsubsecnum
+\newdimen\tocsubsubsectotal
+\newdimen\tocparanum
+\newdimen\tocparatotal
+\newdimen\tocsubparanum
+\tocchpnum=\z@            % no chapter numbers
+\tocsecnum=15\p@          % section 88. plus 2.222pt
+\tocsubsecnum=23\p@       % subsection 88.8 plus 2.222pt
+\tocsubsubsecnum=27\p@    % subsubsection 88.8.8 plus 1.444pt
+\tocparanum=35\p@         % paragraph 88.8.8.8 plus 1.666pt
+\tocsubparanum=43\p@      % subparagraph 88.8.8.8.8 plus 1.888pt
+\def\calctocindent{%
+\tocsectotal=\tocchpnum
+\advance\tocsectotal by\tocsecnum
+\tocsubsectotal=\tocsectotal
+\advance\tocsubsectotal by\tocsubsecnum
+\tocsubsubsectotal=\tocsubsectotal
+\advance\tocsubsubsectotal by\tocsubsubsecnum
+\tocparatotal=\tocsubsubsectotal
+\advance\tocparatotal by\tocparanum}
+\calctocindent
+
+\def\l@section{\@dottedtocline{1}{\tocchpnum}{\tocsecnum}}
+\def\l@subsection{\@dottedtocline{2}{\tocsectotal}{\tocsubsecnum}}
+\def\l@subsubsection{\@dottedtocline{3}{\tocsubsectotal}{\tocsubsubsecnum}}
+\def\l@paragraph{\@dottedtocline{4}{\tocsubsubsectotal}{\tocparanum}}
+\def\l@subparagraph{\@dottedtocline{5}{\tocparatotal}{\tocsubparanum}}
+
+\def\listoffigures{\@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
+ \fi\section*{\listfigurename\@mkboth{{\listfigurename}}{{\listfigurename}}}
+ \@starttoc{lof}\if@restonecol\twocolumn\fi}
+\def\l@figure{\@dottedtocline{1}{0em}{1.5em}}
+
+\def\listoftables{\@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
+ \fi\section*{\listtablename\@mkboth{{\listtablename}}{{\listtablename}}}
+ \@starttoc{lot}\if@restonecol\twocolumn\fi}
+\let\l@table\l@figure
+
+\renewcommand\listoffigures{%
+    \section*{\listfigurename
+      \@mkboth{\listfigurename}{\listfigurename}}%
+    \@starttoc{lof}%
+    }
+
+\renewcommand\listoftables{%
+    \section*{\listtablename
+      \@mkboth{\listtablename}{\listtablename}}%
+    \@starttoc{lot}%
+    }
+
+\ifx\oribibl\undefined
+\ifx\citeauthoryear\undefined
+\renewenvironment{thebibliography}[1]
+     {\section*{\refname}
+      \def\@biblabel##1{##1.}
+      \small
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {\settowidth\labelwidth{\@biblabel{#1}}%
+            \leftmargin\labelwidth
+            \advance\leftmargin\labelsep
+            \if@openbib
+              \advance\leftmargin\bibindent
+              \itemindent -\bibindent
+              \listparindent \itemindent
+              \parsep \z@
+            \fi
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+      \if@openbib
+        \renewcommand\newblock{\par}%
+      \else
+        \renewcommand\newblock{\hskip .11em \@plus.33em \@minus.07em}%
+      \fi
+      \sloppy\clubpenalty4000\widowpenalty4000%
+      \sfcode`\.=\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+\def\@lbibitem[#1]#2{\item[{[#1]}\hfill]\if@filesw
+     {\let\protect\noexpand\immediate
+     \write\@auxout{\string\bibcite{#2}{#1}}}\fi\ignorespaces}
+\newcount\@tempcntc
+\def\@citex[#1]#2{\if@filesw\immediate\write\@auxout{\string\citation{#2}}\fi
+  \@tempcnta\z@\@tempcntb\m@ne\def\@citea{}\@cite{\@for\@citeb:=#2\do
+    {\@ifundefined
+       {b@\@citeb}{\@citeo\@tempcntb\m@ne\@citea\def\@citea{,}{\bfseries
+        ?}\@warning
+       {Citation `\@citeb' on page \thepage \space undefined}}%
+    {\setbox\z@\hbox{\global\@tempcntc0\csname b@\@citeb\endcsname\relax}%
+     \ifnum\@tempcntc=\z@ \@citeo\@tempcntb\m@ne
+       \@citea\def\@citea{,}\hbox{\csname b@\@citeb\endcsname}%
+     \else
+      \advance\@tempcntb\@ne
+      \ifnum\@tempcntb=\@tempcntc
+      \else\advance\@tempcntb\m@ne\@citeo
+      \@tempcnta\@tempcntc\@tempcntb\@tempcntc\fi\fi}}\@citeo}{#1}}
+\def\@citeo{\ifnum\@tempcnta>\@tempcntb\else
+               \@citea\def\@citea{,\,\hskip\z@skip}%
+               \ifnum\@tempcnta=\@tempcntb\the\@tempcnta\else
+               {\advance\@tempcnta\@ne\ifnum\@tempcnta=\@tempcntb \else
+                \def\@citea{--}\fi
+      \advance\@tempcnta\m@ne\the\@tempcnta\@citea\the\@tempcntb}\fi\fi}
+\else
+\renewenvironment{thebibliography}[1]
+     {\section*{\refname}
+      \small
+      \list{}%
+           {\settowidth\labelwidth{}%
+            \leftmargin\parindent
+            \itemindent=-\parindent
+            \labelsep=\z@
+            \if@openbib
+              \advance\leftmargin\bibindent
+              \itemindent -\bibindent
+              \listparindent \itemindent
+              \parsep \z@
+            \fi
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{}}%
+      \if@openbib
+        \renewcommand\newblock{\par}%
+      \else
+        \renewcommand\newblock{\hskip .11em \@plus.33em \@minus.07em}%
+      \fi
+      \sloppy\clubpenalty4000\widowpenalty4000%
+      \sfcode`\.=\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+      \def\@cite#1{#1}%
+      \def\@lbibitem[#1]#2{\item[]\if@filesw
+        {\def\protect##1{\string ##1\space}\immediate
+      \write\@auxout{\string\bibcite{#2}{#1}}}\fi\ignorespaces}
+   \fi
+\else
+\@cons\@openbib@code{\noexpand\small}
+\fi
+
+\def\idxquad{\hskip 10\p@}% space that divides entry from number
+
+\def\@idxitem{\par\hangindent 10\p@}
+
+\def\subitem{\par\setbox0=\hbox{--\enspace}% second order
+                \noindent\hangindent\wd0\box0}% index entry
+
+\def\subsubitem{\par\setbox0=\hbox{--\,--\enspace}% third
+                \noindent\hangindent\wd0\box0}% order index entry
+
+\def\indexspace{\par \vskip 10\p@ plus5\p@ minus3\p@\relax}
+
+\renewenvironment{theindex}
+               {\@mkboth{\indexname}{\indexname}%
+                \thispagestyle{empty}\parindent\z@
+                \parskip\z@ \@plus .3\p@\relax
+                \let\item\par
+                \def\,{\relax\ifmmode\mskip\thinmuskip
+                             \else\hskip0.2em\ignorespaces\fi}%
+                \normalfont\small
+                \begin{multicols}{2}[\@makeschapterhead{\indexname}]%
+                }
+                {\end{multicols}}
+
+\renewcommand\footnoterule{%
+  \kern-3\p@
+  \hrule\@width 2truecm
+  \kern2.6\p@}
+  \newdimen\fnindent
+  \fnindent1em
+\long\def\@makefntext#1{%
+    \parindent \fnindent%
+    \leftskip \fnindent%
+    \noindent
+    \llap{\hb@xt@1em{\hss\@makefnmark\ }}\ignorespaces#1}
+
+\long\def\@makecaption#1#2{%
+  \small
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{{\bfseries #1.} #2}%
+  \ifdim \wd\@tempboxa >\hsize
+    {\bfseries #1.} #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+
+\def\fps@figure{htbp}
+\def\fnum@figure{\figurename\thinspace\thefigure}
+\def \@floatboxreset {%
+        \reset@font
+        \small
+        \@setnobreak
+        \@setminipage
+}
+\def\fps@table{htbp}
+\def\fnum@table{\tablename~\thetable}
+\renewenvironment{table}
+               {\setlength\abovecaptionskip{0\p@}%
+                \setlength\belowcaptionskip{10\p@}%
+                \@float{table}}
+               {\end@float}
+\renewenvironment{table*}
+               {\setlength\abovecaptionskip{0\p@}%
+                \setlength\belowcaptionskip{10\p@}%
+                \@dblfloat{table}}
+               {\end@dblfloat}
+
+\long\def\@caption#1[#2]#3{\par\addcontentsline{\csname
+  ext@#1\endcsname}{#1}{\protect\numberline{\csname
+  the#1\endcsname}{\ignorespaces #2}}\begingroup
+    \@parboxrestore
+    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+  \endgroup}
+
+% LaTeX does not provide a command to enter the authors institute
+% addresses. The \institute command is defined here.
+
+\newcounter{@inst}
+\newcounter{@auth}
+\newcounter{auco}
+\newdimen\instindent
+\newbox\authrun
+\newtoks\authorrunning
+\newtoks\tocauthor
+\newbox\titrun
+\newtoks\titlerunning
+\newtoks\toctitle
+
+\def\clearheadinfo{\gdef\@author{No Author Given}%
+                   \gdef\@title{No Title Given}%
+                   \gdef\@subtitle{}%
+                   \gdef\@institute{No Institute Given}%
+                   \gdef\@thanks{}%
+                   \global\titlerunning={}\global\authorrunning={}%
+                   \global\toctitle={}\global\tocauthor={}}
+
+\def\institute#1{\gdef\@institute{#1}}
+
+\def\institutename{\par
+ \begingroup
+ \parskip=\z@
+ \parindent=\z@
+ \setcounter{@inst}{1}%
+ \def\and{\par\stepcounter{@inst}%
+ \noindent$^{\the@inst}$\enspace\ignorespaces}%
+ \setbox0=\vbox{\def\thanks##1{}\@institute}%
+ \ifnum\c@@inst=1\relax
+   \gdef\fnnstart{0}%
+ \else
+   \xdef\fnnstart{\c@@inst}%
+   \setcounter{@inst}{1}%
+   \noindent$^{\the@inst}$\enspace
+ \fi
+ \ignorespaces
+ \@institute\par
+ \endgroup}
+
+\def\@fnsymbol#1{\ensuremath{\ifcase#1\or\star\or{\star\star}\or
+   {\star\star\star}\or \dagger\or \ddagger\or
+   \mathchar "278\or \mathchar "27B\or \|\or **\or \dagger\dagger
+   \or \ddagger\ddagger \else\@ctrerr\fi}}
+
+\def\inst#1{\unskip$^{#1}$}
+\def\fnmsep{\unskip$^,$}
+\def\email#1{{\tt#1}}
+\AtBeginDocument{\@ifundefined{url}{\def\url#1{#1}}{}%
+\@ifpackageloaded{babel}{%
+\@ifundefined{extrasenglish}{}{\addto\extrasenglish{\switcht@albion}}%
+\@ifundefined{extrasfrenchb}{}{\addto\extrasfrenchb{\switcht@francais}}%
+\@ifundefined{extrasgerman}{}{\addto\extrasgerman{\switcht@deutsch}}%
+\@ifundefined{extrasngerman}{}{\addto\extrasngerman{\switcht@deutsch}}%
+}{\switcht@@therlang}%
+\providecommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}%
+}
+\def\homedir{\~{ }}
+
+\def\subtitle#1{\gdef\@subtitle{#1}}
+\clearheadinfo
+%
+%%% to avoid hyperref warnings
+\providecommand*{\toclevel@author}{999}
+%%% to make title-entry parent of section-entries
+\providecommand*{\toclevel@title}{0}
+%
+\renewcommand\maketitle{\newpage
+\phantomsection
+  \refstepcounter{chapter}%
+  \stepcounter{section}%
+  \setcounter{section}{0}%
+  \setcounter{subsection}{0}%
+  \setcounter{figure}{0}
+  \setcounter{table}{0}
+  \setcounter{equation}{0}
+  \setcounter{footnote}{0}%
+  \begingroup
+    \parindent=\z@
+    \renewcommand\thefootnote{\@fnsymbol\c@footnote}%
+    \if@twocolumn
+      \ifnum \col@number=\@ne
+        \@maketitle
+      \else
+        \twocolumn[\@maketitle]%
+      \fi
+    \else
+      \newpage
+      \global\@topnum\z@   % Prevents figures from going at top of page.
+      \@maketitle
+    \fi
+    \thispagestyle{empty}\@thanks
+%
+    \def\\{\unskip\ \ignorespaces}\def\inst##1{\unskip{}}%
+    \def\thanks##1{\unskip{}}\def\fnmsep{\unskip}%
+    \instindent=\hsize
+    \advance\instindent by-\headlineindent
+    \if!\the\toctitle!\addcontentsline{toc}{title}{\@title}\else
+       \addcontentsline{toc}{title}{\the\toctitle}\fi
+    \if@runhead
+       \if!\the\titlerunning!\else
+         \edef\@title{\the\titlerunning}%
+       \fi
+       \global\setbox\titrun=\hbox{\small\rm\unboldmath\ignorespaces\@title}%
+       \ifdim\wd\titrun>\instindent
+          \typeout{Title too long for running head. Please supply}%
+          \typeout{a shorter form with \string\titlerunning\space prior to
+                   \string\maketitle}%
+          \global\setbox\titrun=\hbox{\small\rm
+          Title Suppressed Due to Excessive Length}%
+       \fi
+       \xdef\@title{\copy\titrun}%
+    \fi
+%
+    \if!\the\tocauthor!\relax
+      {\def\and{\noexpand\protect\noexpand\and}%
+      \protected@xdef\toc@uthor{\@author}}%
+    \else
+      \def\\{\noexpand\protect\noexpand\newline}%
+      \protected@xdef\scratch{\the\tocauthor}%
+      \protected@xdef\toc@uthor{\scratch}%
+    \fi
+    \addtocontents{toc}{\noexpand\protect\noexpand\authcount{\the\c@auco}}%
+    \addcontentsline{toc}{author}{\toc@uthor}%
+    \if@runhead
+       \if!\the\authorrunning!
+         \value{@inst}=\value{@auth}%
+         \setcounter{@auth}{1}%
+       \else
+         \edef\@author{\the\authorrunning}%
+       \fi
+       \global\setbox\authrun=\hbox{\small\unboldmath\@author\unskip}%
+       \ifdim\wd\authrun>\instindent
+          \typeout{Names of authors too long for running head. Please supply}%
+          \typeout{a shorter form with \string\authorrunning\space prior to
+                   \string\maketitle}%
+          \global\setbox\authrun=\hbox{\small\rm
+          Authors Suppressed Due to Excessive Length}%
+       \fi
+       \xdef\@author{\copy\authrun}%
+       \markboth{\@author}{\@title}%
+     \fi
+  \endgroup
+  \setcounter{footnote}{\fnnstart}%
+  \clearheadinfo}
+%
+\def\@maketitle{\newpage
+ \markboth{}{}%
+ \def\lastand{\ifnum\value{@inst}=2\relax
+                 \unskip{} \andname\
+              \else
+                 \unskip \lastandname\
+              \fi}%
+ \def\and{\stepcounter{@auth}\relax
+          \ifnum\value{@auth}=\value{@inst}%
+             \lastand
+          \else
+             \unskip,
+          \fi}%
+ \begin{center}%
+ \let\newline\\
+ {\Large \bfseries\boldmath
+  \pretolerance=10000
+  \@title \par}\vskip .8cm
+\if!\@subtitle!\else {\large \bfseries\boldmath
+  \vskip -.65cm
+  \pretolerance=10000
+  \@subtitle \par}\vskip .8cm\fi
+ \setbox0=\vbox{\setcounter{@auth}{1}\def\and{\stepcounter{@auth}}%
+ \def\thanks##1{}\@author}%
+ \global\value{@inst}=\value{@auth}%
+ \global\value{auco}=\value{@auth}%
+ \setcounter{@auth}{1}%
+{\lineskip .5em
+\noindent\ignorespaces
+\@author\vskip.35cm}
+ {\small\institutename}
+ \end{center}%
+ }
+
+% definition of the "\spnewtheorem" command.
+%
+% Usage:
+%
+%     \spnewtheorem{env_nam}{caption}[within]{cap_font}{body_font}
+% or  \spnewtheorem{env_nam}[numbered_like]{caption}{cap_font}{body_font}
+% or  \spnewtheorem*{env_nam}{caption}{cap_font}{body_font}
+%
+% New is "cap_font" and "body_font". It stands for
+% fontdefinition of the caption and the text itself.
+%
+% "\spnewtheorem*" gives a theorem without number.
+%
+% A defined spnewthoerem environment is used as described
+% by Lamport.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\@thmcountersep{}
+\def\@thmcounterend{.}
+
+\def\spnewtheorem{\@ifstar{\@sthm}{\@Sthm}}
+
+% definition of \spnewtheorem with number
+
+\def\@spnthm#1#2{%
+  \@ifnextchar[{\@spxnthm{#1}{#2}}{\@spynthm{#1}{#2}}}
+\def\@Sthm#1{\@ifnextchar[{\@spothm{#1}}{\@spnthm{#1}}}
+
+\def\@spxnthm#1#2[#3]#4#5{\expandafter\@ifdefinable\csname #1\endcsname
+   {\@definecounter{#1}\@addtoreset{#1}{#3}%
+   \expandafter\xdef\csname the#1\endcsname{\expandafter\noexpand
+     \csname the#3\endcsname \noexpand\@thmcountersep \@thmcounter{#1}}%
+   \expandafter\xdef\csname #1name\endcsname{#2}%
+   \global\@namedef{#1}{\@spthm{#1}{\csname #1name\endcsname}{#4}{#5}}%
+                              \global\@namedef{end#1}{\@endtheorem}}}
+
+\def\@spynthm#1#2#3#4{\expandafter\@ifdefinable\csname #1\endcsname
+   {\@definecounter{#1}%
+   \expandafter\xdef\csname the#1\endcsname{\@thmcounter{#1}}%
+   \expandafter\xdef\csname #1name\endcsname{#2}%
+   \global\@namedef{#1}{\@spthm{#1}{\csname #1name\endcsname}{#3}{#4}}%
+                               \global\@namedef{end#1}{\@endtheorem}}}
+
+\def\@spothm#1[#2]#3#4#5{%
+  \@ifundefined{c@#2}{\@latexerr{No theorem environment `#2' defined}\@eha}%
+  {\expandafter\@ifdefinable\csname #1\endcsname
+  {\newaliascnt{#1}{#2}%
+  \expandafter\xdef\csname #1name\endcsname{#3}%
+  \global\@namedef{#1}{\@spthm{#1}{\csname #1name\endcsname}{#4}{#5}}%
+  \global\@namedef{end#1}{\@endtheorem}}}}
+
+\def\@spthm#1#2#3#4{\topsep 7\p@ \@plus2\p@ \@minus4\p@
+\refstepcounter{#1}%
+\@ifnextchar[{\@spythm{#1}{#2}{#3}{#4}}{\@spxthm{#1}{#2}{#3}{#4}}}
+
+\def\@spxthm#1#2#3#4{\@spbegintheorem{#2}{\csname the#1\endcsname}{#3}{#4}%
+                    \ignorespaces}
+
+\def\@spythm#1#2#3#4[#5]{\@spopargbegintheorem{#2}{\csname
+       the#1\endcsname}{#5}{#3}{#4}\ignorespaces}
+
+\def\@spbegintheorem#1#2#3#4{\trivlist
+                 \item[\hskip\labelsep{#3#1\ #2\@thmcounterend}]#4}
+
+\def\@spopargbegintheorem#1#2#3#4#5{\trivlist
+      \item[\hskip\labelsep{#4#1\ #2}]{#4(#3)\@thmcounterend\ }#5}
+
+% definition of \spnewtheorem* without number
+
+\def\@sthm#1#2{\@Ynthm{#1}{#2}}
+
+\def\@Ynthm#1#2#3#4{\expandafter\@ifdefinable\csname #1\endcsname
+   {\global\@namedef{#1}{\@Thm{\csname #1name\endcsname}{#3}{#4}}%
+    \expandafter\xdef\csname #1name\endcsname{#2}%
+    \global\@namedef{end#1}{\@endtheorem}}}
+
+\def\@Thm#1#2#3{\topsep 7\p@ \@plus2\p@ \@minus4\p@
+\@ifnextchar[{\@Ythm{#1}{#2}{#3}}{\@Xthm{#1}{#2}{#3}}}
+
+\def\@Xthm#1#2#3{\@Begintheorem{#1}{#2}{#3}\ignorespaces}
+
+\def\@Ythm#1#2#3[#4]{\@Opargbegintheorem{#1}
+       {#4}{#2}{#3}\ignorespaces}
+
+\def\@Begintheorem#1#2#3{#3\trivlist
+                           \item[\hskip\labelsep{#2#1\@thmcounterend}]}
+
+\def\@Opargbegintheorem#1#2#3#4{#4\trivlist
+      \item[\hskip\labelsep{#3#1}]{#3(#2)\@thmcounterend\ }}
+
+\if@envcntsect
+   \def\@thmcountersep{.}
+   \spnewtheorem{theorem}{Theorem}[section]{\bfseries}{\itshape}
+\else
+   \spnewtheorem{theorem}{Theorem}{\bfseries}{\itshape}
+   \if@envcntreset
+      \@addtoreset{theorem}{section}
+   \else
+      \@addtoreset{theorem}{chapter}
+   \fi
+\fi
+
+%definition of divers theorem environments
+\spnewtheorem*{claim}{Claim}{\itshape}{\rmfamily}
+\spnewtheorem*{proof}{Proof}{\itshape}{\rmfamily}
+\if@envcntsame % alle Umgebungen wie Theorem.
+   \def\spn@wtheorem#1#2#3#4{\@spothm{#1}[theorem]{#2}{#3}{#4}}
+\else % alle Umgebungen mit eigenem Zaehler
+   \if@envcntsect % mit section numeriert
+      \def\spn@wtheorem#1#2#3#4{\@spxnthm{#1}{#2}[section]{#3}{#4}}
+   \else % nicht mit section numeriert
+      \if@envcntreset
+         \def\spn@wtheorem#1#2#3#4{\@spynthm{#1}{#2}{#3}{#4}
+                                   \@addtoreset{#1}{section}}
+      \else
+         \def\spn@wtheorem#1#2#3#4{\@spynthm{#1}{#2}{#3}{#4}
+                                   \@addtoreset{#1}{chapter}}%
+      \fi
+   \fi
+\fi
+\spn@wtheorem{case}{Case}{\itshape}{\rmfamily}
+\spn@wtheorem{conjecture}{Conjecture}{\itshape}{\rmfamily}
+\spn@wtheorem{corollary}{Corollary}{\bfseries}{\itshape}
+\spn@wtheorem{definition}{Definition}{\bfseries}{\itshape}
+\spn@wtheorem{example}{Example}{\itshape}{\rmfamily}
+\spn@wtheorem{exercise}{Exercise}{\itshape}{\rmfamily}
+\spn@wtheorem{lemma}{Lemma}{\bfseries}{\itshape}
+\spn@wtheorem{note}{Note}{\itshape}{\rmfamily}
+\spn@wtheorem{problem}{Problem}{\itshape}{\rmfamily}
+\spn@wtheorem{property}{Property}{\itshape}{\rmfamily}
+\spn@wtheorem{proposition}{Proposition}{\bfseries}{\itshape}
+\spn@wtheorem{question}{Question}{\itshape}{\rmfamily}
+\spn@wtheorem{solution}{Solution}{\itshape}{\rmfamily}
+\spn@wtheorem{remark}{Remark}{\itshape}{\rmfamily}
+
+\def\@takefromreset#1#2{%
+    \def\@tempa{#1}%
+    \let\@tempd\@elt
+    \def\@elt##1{%
+        \def\@tempb{##1}%
+        \ifx\@tempa\@tempb\else
+            \@addtoreset{##1}{#2}%
+        \fi}%
+    \expandafter\expandafter\let\expandafter\@tempc\csname cl@#2\endcsname
+    \expandafter\def\csname cl@#2\endcsname{}%
+    \@tempc
+    \let\@elt\@tempd}
+
+\def\theopargself{\def\@spopargbegintheorem##1##2##3##4##5{\trivlist
+      \item[\hskip\labelsep{##4##1\ ##2}]{##4##3\@thmcounterend\ }##5}
+                  \def\@Opargbegintheorem##1##2##3##4{##4\trivlist
+      \item[\hskip\labelsep{##3##1}]{##3##2\@thmcounterend\ }}
+      }
+
+\renewenvironment{abstract}{%
+      \list{}{\advance\topsep by0.35cm\relax\small
+      \leftmargin=1cm
+      \labelwidth=\z@
+      \listparindent=\z@
+      \itemindent\listparindent
+      \rightmargin\leftmargin}\item[\hskip\labelsep
+                                    \bfseries\abstractname]}
+    {\endlist}
+
+\newdimen\headlineindent             % dimension for space between
+\headlineindent=1.166cm              % number and text of headings.
+
+\def\ps@headings{\let\@mkboth\@gobbletwo
+   \let\@oddfoot\@empty\let\@evenfoot\@empty
+   \def\@evenhead{\normalfont\small\rlap{\thepage}\hspace{\headlineindent}%
+                  \leftmark\hfil}
+   \def\@oddhead{\normalfont\small\hfil\rightmark\hspace{\headlineindent}%
+                 \llap{\thepage}}
+   \def\chaptermark##1{}%
+   \def\sectionmark##1{}%
+   \def\subsectionmark##1{}}
+
+\def\ps@titlepage{\let\@mkboth\@gobbletwo
+   \let\@oddfoot\@empty\let\@evenfoot\@empty
+   \def\@evenhead{\normalfont\small\rlap{\thepage}\hspace{\headlineindent}%
+                  \hfil}
+   \def\@oddhead{\normalfont\small\hfil\hspace{\headlineindent}%
+                 \llap{\thepage}}
+   \def\chaptermark##1{}%
+   \def\sectionmark##1{}%
+   \def\subsectionmark##1{}}
+
+\if@runhead\ps@headings\else
+\ps@empty\fi
+
+\setlength\arraycolsep{1.4\p@}
+\setlength\tabcolsep{1.4\p@}
+
+\endinput
+%end of file llncs.cls
+
+#+end_src
+#+begin_src tex :tangle llncsdoc.sty
+\def\AmS{{\protect\usefont{OMS}{cmsy}{m}{n}%
+  A\kern-.1667em\lower.5ex\hbox{M}\kern-.125emS}}
+\def\AmSTeX{{\protect\AmS-\protect\TeX}}
+%
+\def\ps@myheadings{\let\@mkboth\@gobbletwo
+\def\@oddhead{\hbox{}\hfil\small\rm\rightmark
+\qquad\thepage}%
+\def\@oddfoot{}\def\@evenhead{\small\rm\thepage\qquad
+\leftmark\hfil}%
+\def\@evenfoot{}\def\sectionmark##1{}\def\subsectionmark##1{}}
+\ps@myheadings
+%
+\setcounter{tocdepth}{2}
+%
+\renewcommand{\labelitemi}{--}
+\newenvironment{alpherate}%
+{\renewcommand{\labelenumi}{\alph{enumi})}\begin{enumerate}}%
+{\end{enumerate}\renewcommand{\labelenumi}{enumi}}
+%
+\def\bibauthoryear{\begingroup
+\def\thebibliography##1{\section*{References}%
+    \small\list{}{\settowidth\labelwidth{}\leftmargin\parindent
+    \itemindent=-\parindent
+    \labelsep=\z@
+    \usecounter{enumi}}%
+    \def\newblock{\hskip .11em plus .33em minus -.07em}%
+    \sloppy
+    \sfcode`\.=1000\relax}%
+    \def\@cite##1{##1}%
+    \def\@lbibitem[##1]##2{\item[]\if@filesw
+      {\def\protect####1{\string ####1\space}\immediate
+    \write\@auxout{\string\bibcite{##2}{##1}}}\fi\ignorespaces}%
+\begin{thebibliography}{}
+\bibitem[1982]{clar:eke3} Clarke, F., Ekeland, I.: Nonlinear
+oscillations and boundary-value problems for Hamiltonian systems.
+Arch. Rat. Mech. Anal. 78, 315--333 (1982)
+\end{thebibliography}
+\endgroup}
+#+end_src
+#+begin_src tex :tangle splncs03.bst
+%% BibTeX bibliography style `splncs03'
+%%
+%% BibTeX bibliography style for use with numbered references in
+%% Springer Verlag's "Lecture Notes in Computer Science" series.
+%% (See Springer's documentation for llncs.cls for
+%% more details of the suggested reference format.)  Note that this
+%% file will not work for author-year style citations.
+%%
+%% Use \documentclass{llncs} and \bibliographystyle{splncs03}, and cite
+%% a reference with (e.g.) \cite{smith77} to get a "[1]" in the text.
+%%
+%% This file comes to you courtesy of Maurizio "Titto" Patrignani of
+%% Dipartimento di Informatica e Automazione Universita' Roma Tre
+%%
+%% ================================================================================================
+%% This was file `titto-lncs-02.bst' produced on Wed Apr 1, 2009
+%% Edited by hand by titto based on `titto-lncs-01.bst' (see below)
+%%
+%% CHANGES (with respect to titto-lncs-01.bst):
+%% - Removed the call to \urlprefix (thus no "URL" string is added to the output)
+%% ================================================================================================
+%% This was file `titto-lncs-01.bst' produced on Fri Aug 22, 2008
+%% Edited by hand by titto based on `titto.bst' (see below)
+%%
+%% CHANGES (with respect to titto.bst):
+%% - Removed the "capitalize" command for editors string "(eds.)" and "(ed.)"
+%% - Introduced the functions titto.bbl.pages and titto.bbl.page for journal pages (without "pp.")
+%% - Added a new.sentence command to separate with a dot booktitle and series in the inproceedings
+%% - Commented all new.block commands before urls and notes (to separate them with a comma)
+%% - Introduced the functions titto.bbl.volume for handling journal volumes (without "vol." label)
+%% - Used for editors the same name conventions used for authors (see function format.in.ed.booktitle)
+%% - Removed a \newblock to avoid long spaces between title and "In: ..."
+%% - Added function titto.space.prefix to add a space instead of "~" after the (removed) "vol." label
+%% ================================================================================================
+%% This was file `titto.bst',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% merlin.mbs  (with options: `vonx,nm-rvvc,yr-par,jttl-rm,volp-com,jwdpg,jwdvol,numser,ser-vol,jnm-x,btit-rm,bt-rm,edparxc,bkedcap,au-col,in-col,fin-bare,pp,ed,abr,mth-bare,xedn,jabr,and-com,and-com-ed,xand,url,url-blk,em-x,nfss,')
+%% ----------------------------------------
+%% *** Tentative .bst file for Springer LNCS ***
+%%
+%% Copyright 1994-2007 Patrick W Daly
+ % ===============================================================
+ % IMPORTANT NOTICE:
+ % This bibliographic style (bst) file has been generated from one or
+ % more master bibliographic style (mbs) files, listed above.
+ %
+ % This generated file can be redistributed and/or modified under the terms
+ % of the LaTeX Project Public License Distributed from CTAN
+ % archives in directory macros/latex/base/lppl.txt; either
+ % version 1 of the License, or any later version.
+ % ===============================================================
+ % Name and version information of the main mbs file:
+ % \ProvidesFile{merlin.mbs}[2007/04/24 4.20 (PWD, AO, DPC)]
+ %   For use with BibTeX version 0.99a or later
+ %-------------------------------------------------------------------
+ % This bibliography style file is intended for texts in ENGLISH
+ % This is a numerical citation style, and as such is standard LaTeX.
+ % It requires no extra package to interface to the main text.
+ % The form of the \bibitem entries is
+ %   \bibitem{key}...
+ % Usage of \cite is as follows:
+ %   \cite{key} ==>>          [#]
+ %   \cite[chap. 2]{key} ==>> [#, chap. 2]
+ % where # is a number determined by the ordering in the reference list.
+ % The order in the reference list is alphabetical by authors.
+ %---------------------------------------------------------------------
+
+ENTRY
+  { address
+    author
+    booktitle
+    chapter
+    edition
+    editor
+    eid
+    howpublished
+    institution
+    journal
+    key
+    month
+    note
+    number
+    organization
+    pages
+    publisher
+    school
+    series
+    title
+    type
+    url
+    volume
+    year
+  }
+  {}
+  { label }
+INTEGERS { output.state before.all mid.sentence after.sentence after.block }
+FUNCTION {init.state.consts}
+{ #0 'before.all :=
+  #1 'mid.sentence :=
+  #2 'after.sentence :=
+  #3 'after.block :=
+}
+STRINGS { s t}
+FUNCTION {output.nonnull}
+{ 's :=
+  output.state mid.sentence =
+    { ", " * write$ }
+    { output.state after.block =
+        { add.period$ write$
+%          newline$
+%          "\newblock " write$  % removed for titto-lncs-01
+          " " write$            % to avoid long spaces between title and "In: ..."
+        }
+        { output.state before.all =
+            'write$
+            { add.period$ " " * write$ }
+          if$
+        }
+      if$
+      mid.sentence 'output.state :=
+    }
+  if$
+  s
+}
+FUNCTION {output}
+{ duplicate$ empty$
+    'pop$
+    'output.nonnull
+  if$
+}
+FUNCTION {output.check}
+{ 't :=
+  duplicate$ empty$
+    { pop$ "empty " t * " in " * cite$ * warning$ }
+    'output.nonnull
+  if$
+}
+FUNCTION {fin.entry}
+{ duplicate$ empty$
+    'pop$
+    'write$
+  if$
+  newline$
+}
+
+FUNCTION {new.block}
+{ output.state before.all =
+    'skip$
+    { after.block 'output.state := }
+  if$
+}
+FUNCTION {new.sentence}
+{ output.state after.block =
+    'skip$
+    { output.state before.all =
+        'skip$
+        { after.sentence 'output.state := }
+      if$
+    }
+  if$
+}
+FUNCTION {add.blank}
+{  " " * before.all 'output.state :=
+}
+
+
+FUNCTION {add.colon}
+{ duplicate$ empty$
+    'skip$
+    { ":" * add.blank }
+  if$
+}
+
+FUNCTION {date.block}
+{
+  new.block
+}
+
+FUNCTION {not}
+{   { #0 }
+    { #1 }
+  if$
+}
+FUNCTION {and}
+{   'skip$
+    { pop$ #0 }
+  if$
+}
+FUNCTION {or}
+{   { pop$ #1 }
+    'skip$
+  if$
+}
+STRINGS {z}
+FUNCTION {remove.dots}
+{ 'z :=
+  ""
+  { z empty$ not }
+  { z #1 #1 substring$
+    z #2 global.max$ substring$ 'z :=
+    duplicate$ "." = 'pop$
+      { * }
+    if$
+  }
+  while$
+}
+FUNCTION {new.block.checka}
+{ empty$
+    'skip$
+    'new.block
+  if$
+}
+FUNCTION {new.block.checkb}
+{ empty$
+  swap$ empty$
+  and
+    'skip$
+    'new.block
+  if$
+}
+FUNCTION {new.sentence.checka}
+{ empty$
+    'skip$
+    'new.sentence
+  if$
+}
+FUNCTION {new.sentence.checkb}
+{ empty$
+  swap$ empty$
+  and
+    'skip$
+    'new.sentence
+  if$
+}
+FUNCTION {field.or.null}
+{ duplicate$ empty$
+    { pop$ "" }
+    'skip$
+  if$
+}
+FUNCTION {emphasize}
+{ skip$ }
+FUNCTION {tie.or.space.prefix}
+{ duplicate$ text.length$ #3 <
+    { "~" }
+    { " " }
+  if$
+  swap$
+}
+FUNCTION {titto.space.prefix} %  always introduce a space
+{ duplicate$ text.length$ #3 <
+    { " " }
+    { " " }
+  if$
+  swap$
+}
+
+
+FUNCTION {capitalize}
+{ "u" change.case$ "t" change.case$ }
+
+FUNCTION {space.word}
+{ " " swap$ * " " * }
+ % Here are the language-specific definitions for explicit words.
+ % Each function has a name bbl.xxx where xxx is the English word.
+ % The language selected here is ENGLISH
+FUNCTION {bbl.and}
+{ "and"}
+
+FUNCTION {bbl.etal}
+{ "et~al." }
+
+FUNCTION {bbl.editors}
+{ "eds." }
+
+FUNCTION {bbl.editor}
+{ "ed." }
+
+FUNCTION {bbl.edby}
+{ "edited by" }
+
+FUNCTION {bbl.edition}
+{ "edn." }
+
+FUNCTION {bbl.volume}
+{ "vol." }
+
+FUNCTION {titto.bbl.volume} % for handling journals
+{ "" }
+
+FUNCTION {bbl.of}
+{ "of" }
+
+FUNCTION {bbl.number}
+{ "no." }
+
+FUNCTION {bbl.nr}
+{ "no." }
+
+FUNCTION {bbl.in}
+{ "in" }
+
+FUNCTION {bbl.pages}
+{ "pp." }
+
+FUNCTION {bbl.page}
+{ "p." }
+
+FUNCTION {titto.bbl.pages} % for journals
+{ "" }
+
+FUNCTION {titto.bbl.page}  % for journals
+{ "" }
+
+FUNCTION {bbl.chapter}
+{ "chap." }
+
+FUNCTION {bbl.techrep}
+{ "Tech. Rep." }
+
+FUNCTION {bbl.mthesis}
+{ "Master's thesis" }
+
+FUNCTION {bbl.phdthesis}
+{ "Ph.D. thesis" }
+
+MACRO {jan} {"Jan."}
+
+MACRO {feb} {"Feb."}
+
+MACRO {mar} {"Mar."}
+
+MACRO {apr} {"Apr."}
+
+MACRO {may} {"May"}
+
+MACRO {jun} {"Jun."}
+
+MACRO {jul} {"Jul."}
+
+MACRO {aug} {"Aug."}
+
+MACRO {sep} {"Sep."}
+
+MACRO {oct} {"Oct."}
+
+MACRO {nov} {"Nov."}
+
+MACRO {dec} {"Dec."}
+
+MACRO {acmcs} {"ACM Comput. Surv."}
+
+MACRO {acta} {"Acta Inf."}
+
+MACRO {cacm} {"Commun. ACM"}
+
+MACRO {ibmjrd} {"IBM J. Res. Dev."}
+
+MACRO {ibmsj} {"IBM Syst.~J."}
+
+MACRO {ieeese} {"IEEE Trans. Software Eng."}
+
+MACRO {ieeetc} {"IEEE Trans. Comput."}
+
+MACRO {ieeetcad}
+ {"IEEE Trans. Comput. Aid. Des."}
+
+MACRO {ipl} {"Inf. Process. Lett."}
+
+MACRO {jacm} {"J.~ACM"}
+
+MACRO {jcss} {"J.~Comput. Syst. Sci."}
+
+MACRO {scp} {"Sci. Comput. Program."}
+
+MACRO {sicomp} {"SIAM J. Comput."}
+
+MACRO {tocs} {"ACM Trans. Comput. Syst."}
+
+MACRO {tods} {"ACM Trans. Database Syst."}
+
+MACRO {tog} {"ACM Trans. Graphic."}
+
+MACRO {toms} {"ACM Trans. Math. Software"}
+
+MACRO {toois} {"ACM Trans. Office Inf. Syst."}
+
+MACRO {toplas} {"ACM Trans. Progr. Lang. Syst."}
+
+MACRO {tcs} {"Theor. Comput. Sci."}
+
+FUNCTION {bibinfo.check}
+{ swap$
+  duplicate$ missing$
+    {
+      pop$ pop$
+      ""
+    }
+    { duplicate$ empty$
+        {
+          swap$ pop$
+        }
+        { swap$
+          pop$
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {bibinfo.warn}
+{ swap$
+  duplicate$ missing$
+    {
+      swap$ "missing " swap$ * " in " * cite$ * warning$ pop$
+      ""
+    }
+    { duplicate$ empty$
+        {
+          swap$ "empty " swap$ * " in " * cite$ * warning$
+        }
+        { swap$
+          pop$
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {format.url}
+{ url empty$
+    { "" }
+%    { "\urlprefix\url{" url * "}" * }
+    { "\url{" url * "}" * }  % changed in titto-lncs-02.bst
+  if$
+}
+
+INTEGERS { nameptr namesleft numnames }
+
+
+STRINGS  { bibinfo}
+
+FUNCTION {format.names}
+{ 'bibinfo :=
+  duplicate$ empty$ 'skip$ {
+  's :=
+  "" 't :=
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { s nameptr
+      "{vv~}{ll}{, jj}{, f{.}.}"
+      format.name$
+      bibinfo bibinfo.check
+      't :=
+      nameptr #1 >
+        {
+          namesleft #1 >
+            { ", " * t * }
+            {
+              s nameptr "{ll}" format.name$ duplicate$ "others" =
+                { 't := }
+                { pop$ }
+              if$
+              "," *
+              t "others" =
+                {
+                  " " * bbl.etal *
+                }
+                { " " * t * }
+              if$
+            }
+          if$
+        }
+        't
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+  } if$
+}
+FUNCTION {format.names.ed}
+{
+  'bibinfo :=
+  duplicate$ empty$ 'skip$ {
+  's :=
+  "" 't :=
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { s nameptr
+      "{f{.}.~}{vv~}{ll}{ jj}"
+      format.name$
+      bibinfo bibinfo.check
+      't :=
+      nameptr #1 >
+        {
+          namesleft #1 >
+            { ", " * t * }
+            {
+              s nameptr "{ll}" format.name$ duplicate$ "others" =
+                { 't := }
+                { pop$ }
+              if$
+              "," *
+              t "others" =
+                {
+
+                  " " * bbl.etal *
+                }
+                { " " * t * }
+              if$
+            }
+          if$
+        }
+        't
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+  } if$
+}
+FUNCTION {format.authors}
+{ author "author" format.names
+}
+FUNCTION {get.bbl.editor}
+{ editor num.names$ #1 > 'bbl.editors 'bbl.editor if$ }
+
+FUNCTION {format.editors}
+{ editor "editor" format.names duplicate$ empty$ 'skip$
+    {
+      " " *
+      get.bbl.editor
+%      capitalize
+   "(" swap$ * ")" *
+      *
+    }
+  if$
+}
+FUNCTION {format.note}
+{
+ note empty$
+    { "" }
+    { note #1 #1 substring$
+      duplicate$ "{" =
+        'skip$
+        { output.state mid.sentence =
+          { "l" }
+          { "u" }
+        if$
+        change.case$
+        }
+      if$
+      note #2 global.max$ substring$ * "note" bibinfo.check
+    }
+  if$
+}
+
+FUNCTION {format.title}
+{ title
+  duplicate$ empty$ 'skip$
+    { "t" change.case$ }
+  if$
+  "title" bibinfo.check
+}
+FUNCTION {output.bibitem}
+{ newline$
+  "\bibitem{" write$
+  cite$ write$
+  "}" write$
+  newline$
+  ""
+  before.all 'output.state :=
+}
+
+FUNCTION {n.dashify}
+{
+  't :=
+  ""
+    { t empty$ not }
+    { t #1 #1 substring$ "-" =
+        { t #1 #2 substring$ "--" = not
+            { "--" *
+              t #2 global.max$ substring$ 't :=
+            }
+            {   { t #1 #1 substring$ "-" = }
+                { "-" *
+                  t #2 global.max$ substring$ 't :=
+                }
+              while$
+            }
+          if$
+        }
+        { t #1 #1 substring$ *
+          t #2 global.max$ substring$ 't :=
+        }
+      if$
+    }
+  while$
+}
+
+FUNCTION {word.in}
+{ bbl.in capitalize
+  ":" *
+  " " * }
+
+FUNCTION {format.date}
+{
+  month "month" bibinfo.check
+  duplicate$ empty$
+  year  "year"  bibinfo.check duplicate$ empty$
+    { swap$ 'skip$
+        { "there's a month but no year in " cite$ * warning$ }
+      if$
+      *
+    }
+    { swap$ 'skip$
+        {
+          swap$
+          " " * swap$
+        }
+      if$
+      *
+      remove.dots
+    }
+  if$
+  duplicate$ empty$
+    'skip$
+    {
+      before.all 'output.state :=
+    " (" swap$ * ")" *
+    }
+  if$
+}
+FUNCTION {format.btitle}
+{ title "title" bibinfo.check
+  duplicate$ empty$ 'skip$
+    {
+    }
+  if$
+}
+FUNCTION {either.or.check}
+{ empty$
+    'pop$
+    { "can't use both " swap$ * " fields in " * cite$ * warning$ }
+  if$
+}
+FUNCTION {format.bvolume}
+{ volume empty$
+    { "" }
+    { bbl.volume volume tie.or.space.prefix
+      "volume" bibinfo.check * *
+      series "series" bibinfo.check
+      duplicate$ empty$ 'pop$
+        { emphasize ", " * swap$ * }
+      if$
+      "volume and number" number either.or.check
+    }
+  if$
+}
+FUNCTION {format.number.series}
+{ volume empty$
+    { number empty$
+        { series field.or.null }
+        { output.state mid.sentence =
+            { bbl.number }
+            { bbl.number capitalize }
+          if$
+          number tie.or.space.prefix "number" bibinfo.check * *
+          series empty$
+            { "there's a number but no series in " cite$ * warning$ }
+            { bbl.in space.word *
+              series "series" bibinfo.check *
+            }
+          if$
+        }
+      if$
+    }
+    { "" }
+  if$
+}
+
+FUNCTION {format.edition}
+{ edition duplicate$ empty$ 'skip$
+    {
+      output.state mid.sentence =
+        { "l" }
+        { "t" }
+      if$ change.case$
+      "edition" bibinfo.check
+      " " * bbl.edition *
+    }
+  if$
+}
+INTEGERS { multiresult }
+FUNCTION {multi.page.check}
+{ 't :=
+  #0 'multiresult :=
+    { multiresult not
+      t empty$ not
+      and
+    }
+    { t #1 #1 substring$
+      duplicate$ "-" =
+      swap$ duplicate$ "," =
+      swap$ "+" =
+      or or
+        { #1 'multiresult := }
+        { t #2 global.max$ substring$ 't := }
+      if$
+    }
+  while$
+  multiresult
+}
+FUNCTION {format.pages}
+{ pages duplicate$ empty$ 'skip$
+    { duplicate$ multi.page.check
+        {
+          bbl.pages swap$
+          n.dashify
+        }
+        {
+          bbl.page swap$
+        }
+      if$
+      tie.or.space.prefix
+      "pages" bibinfo.check
+      * *
+    }
+  if$
+}
+FUNCTION {format.journal.pages}
+{ pages duplicate$ empty$ 'pop$
+    { swap$ duplicate$ empty$
+        { pop$ pop$ format.pages }
+        {
+          ", " *
+          swap$
+          n.dashify
+          pages multi.page.check
+            'titto.bbl.pages
+            'titto.bbl.page
+          if$
+          swap$ tie.or.space.prefix
+          "pages" bibinfo.check
+          * *
+          *
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {format.journal.eid}
+{ eid "eid" bibinfo.check
+  duplicate$ empty$ 'pop$
+    { swap$ duplicate$ empty$ 'skip$
+      {
+          ", " *
+      }
+      if$
+      swap$ *
+    }
+  if$
+}
+FUNCTION {format.vol.num.pages} % this function is used only for journal entries
+{ volume field.or.null
+  duplicate$ empty$ 'skip$
+    {
+%     bbl.volume swap$ tie.or.space.prefix
+      titto.bbl.volume swap$ titto.space.prefix
+%             rationale for the change above: for journals you don't want "vol." label
+%             hence it does not make sense to attach the journal number to the label when
+%             it is short
+      "volume" bibinfo.check
+      * *
+    }
+  if$
+  number "number" bibinfo.check duplicate$ empty$ 'skip$
+    {
+      swap$ duplicate$ empty$
+        { "there's a number but no volume in " cite$ * warning$ }
+        'skip$
+      if$
+      swap$
+      "(" swap$ * ")" *
+    }
+  if$ *
+  eid empty$
+    { format.journal.pages }
+    { format.journal.eid }
+  if$
+}
+
+FUNCTION {format.chapter.pages}
+{ chapter empty$
+    'format.pages
+    { type empty$
+        { bbl.chapter }
+        { type "l" change.case$
+          "type" bibinfo.check
+        }
+      if$
+      chapter tie.or.space.prefix
+      "chapter" bibinfo.check
+      * *
+      pages empty$
+        'skip$
+        { ", " * format.pages * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.booktitle}
+{
+  booktitle "booktitle" bibinfo.check
+}
+FUNCTION {format.in.ed.booktitle}
+{ format.booktitle duplicate$ empty$ 'skip$
+    {
+%     editor "editor" format.names.ed duplicate$ empty$ 'pop$ % changed by titto
+      editor "editor" format.names duplicate$ empty$ 'pop$
+        {
+          " " *
+          get.bbl.editor
+%          capitalize
+          "(" swap$ * ") " *
+          * swap$
+          * }
+      if$
+      word.in swap$ *
+    }
+  if$
+}
+FUNCTION {empty.misc.check}
+{ author empty$ title empty$ howpublished empty$
+  month empty$ year empty$ note empty$
+  and and and and and
+  key empty$ not and
+    { "all relevant fields are empty in " cite$ * warning$ }
+    'skip$
+  if$
+}
+FUNCTION {format.thesis.type}
+{ type duplicate$ empty$
+    'pop$
+    { swap$ pop$
+      "t" change.case$ "type" bibinfo.check
+    }
+  if$
+}
+FUNCTION {format.tr.number}
+{ number "number" bibinfo.check
+  type duplicate$ empty$
+    { pop$ bbl.techrep }
+    'skip$
+  if$
+  "type" bibinfo.check
+  swap$ duplicate$ empty$
+    { pop$ "t" change.case$ }
+    { tie.or.space.prefix * * }
+  if$
+}
+FUNCTION {format.article.crossref}
+{
+  key duplicate$ empty$
+    { pop$
+      journal duplicate$ empty$
+        { "need key or journal for " cite$ * " to crossref " * crossref * warning$ }
+        { "journal" bibinfo.check emphasize word.in swap$ * }
+      if$
+    }
+    { word.in swap$ * " " *}
+  if$
+  " \cite{" * crossref * "}" *
+}
+FUNCTION {format.crossref.editor}
+{ editor #1 "{vv~}{ll}" format.name$
+  "editor" bibinfo.check
+  editor num.names$ duplicate$
+  #2 >
+    { pop$
+      "editor" bibinfo.check
+      " " * bbl.etal
+      *
+    }
+    { #2 <
+        'skip$
+        { editor #2 "{ff }{vv }{ll}{ jj}" format.name$ "others" =
+            {
+              "editor" bibinfo.check
+              " " * bbl.etal
+              *
+            }
+            {
+             bbl.and space.word
+              * editor #2 "{vv~}{ll}" format.name$
+              "editor" bibinfo.check
+              *
+            }
+          if$
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {format.book.crossref}
+{ volume duplicate$ empty$
+    { "empty volume in " cite$ * "'s crossref of " * crossref * warning$
+      pop$ word.in
+    }
+    { bbl.volume
+      capitalize
+      swap$ tie.or.space.prefix "volume" bibinfo.check * * bbl.of space.word *
+    }
+  if$
+  editor empty$
+  editor field.or.null author field.or.null =
+  or
+    { key empty$
+        { series empty$
+            { "need editor, key, or series for " cite$ * " to crossref " *
+              crossref * warning$
+              "" *
+            }
+            { series emphasize * }
+          if$
+        }
+        { key * }
+      if$
+    }
+    { format.crossref.editor * }
+  if$
+  " \cite{" * crossref * "}" *
+}
+FUNCTION {format.incoll.inproc.crossref}
+{
+  editor empty$
+  editor field.or.null author field.or.null =
+  or
+    { key empty$
+        { format.booktitle duplicate$ empty$
+            { "need editor, key, or booktitle for " cite$ * " to crossref " *
+              crossref * warning$
+            }
+            { word.in swap$ * }
+          if$
+        }
+        { word.in key * " " *}
+      if$
+    }
+    { word.in format.crossref.editor * " " *}
+  if$
+  " \cite{" * crossref * "}" *
+}
+FUNCTION {format.org.or.pub}
+{ 't :=
+  ""
+  address empty$ t empty$ and
+    'skip$
+    {
+      t empty$
+        { address "address" bibinfo.check *
+        }
+        { t *
+          address empty$
+            'skip$
+            { ", " * address "address" bibinfo.check * }
+          if$
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {format.publisher.address}
+{ publisher "publisher" bibinfo.warn format.org.or.pub
+}
+
+FUNCTION {format.organization.address}
+{ organization "organization" bibinfo.check format.org.or.pub
+}
+
+FUNCTION {article}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    {
+      journal
+      "journal" bibinfo.check
+      "journal" output.check
+      add.blank
+      format.vol.num.pages output
+      format.date "year" output.check
+    }
+    { format.article.crossref output.nonnull
+      format.pages output
+    }
+  if$
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+FUNCTION {book}
+{ output.bibitem
+  author empty$
+    { format.editors "author and editor" output.check
+      add.colon
+    }
+    { format.authors output.nonnull
+      add.colon
+      crossref missing$
+        { "author and editor" editor either.or.check }
+        'skip$
+      if$
+    }
+  if$
+  new.block
+  format.btitle "title" output.check
+  crossref missing$
+    { format.bvolume output
+      new.block
+      new.sentence
+      format.number.series output
+      format.publisher.address output
+    }
+    {
+      new.block
+      format.book.crossref output.nonnull
+    }
+  if$
+  format.edition output
+  format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+FUNCTION {booklet}
+{ output.bibitem
+  format.authors output
+  add.colon
+  new.block
+  format.title "title" output.check
+  new.block
+  howpublished "howpublished" bibinfo.check output
+  address "address" bibinfo.check output
+  format.date output
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {inbook}
+{ output.bibitem
+  author empty$
+    { format.editors "author and editor" output.check
+      add.colon
+    }
+    { format.authors output.nonnull
+      add.colon
+      crossref missing$
+        { "author and editor" editor either.or.check }
+        'skip$
+      if$
+    }
+  if$
+  new.block
+  format.btitle "title" output.check
+  crossref missing$
+    {
+      format.bvolume output
+      format.chapter.pages "chapter and pages" output.check
+      new.block
+      new.sentence
+      format.number.series output
+      format.publisher.address output
+    }
+    {
+      format.chapter.pages "chapter and pages" output.check
+      new.block
+      format.book.crossref output.nonnull
+    }
+  if$
+  format.edition output
+  format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {incollection}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    { format.in.ed.booktitle "booktitle" output.check
+      format.bvolume output
+      format.chapter.pages output
+      new.sentence
+      format.number.series output
+      format.publisher.address output
+      format.edition output
+      format.date "year" output.check
+    }
+    { format.incoll.inproc.crossref output.nonnull
+      format.chapter.pages output
+    }
+  if$
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+FUNCTION {inproceedings}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.title "title" output.check
+  new.block
+  crossref missing$
+    { format.in.ed.booktitle "booktitle" output.check
+      new.sentence % added by titto
+      format.bvolume output
+      format.pages output
+      new.sentence
+      format.number.series output
+      publisher empty$
+        { format.organization.address output }
+        { organization "organization" bibinfo.check output
+          format.publisher.address output
+        }
+      if$
+      format.date "year" output.check
+    }
+    { format.incoll.inproc.crossref output.nonnull
+      format.pages output
+    }
+  if$
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+FUNCTION {conference} { inproceedings }
+FUNCTION {manual}
+{ output.bibitem
+  author empty$
+    { organization "organization" bibinfo.check
+      duplicate$ empty$ 'pop$
+        { output
+          address "address" bibinfo.check output
+        }
+      if$
+    }
+    { format.authors output.nonnull }
+  if$
+  add.colon
+  new.block
+  format.btitle "title" output.check
+  author empty$
+    { organization empty$
+        {
+          address new.block.checka
+          address "address" bibinfo.check output
+        }
+        'skip$
+      if$
+    }
+    {
+      organization address new.block.checkb
+      organization "organization" bibinfo.check output
+      address "address" bibinfo.check output
+    }
+  if$
+  format.edition output
+  format.date output
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {mastersthesis}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.btitle
+  "title" output.check
+  new.block
+  bbl.mthesis format.thesis.type output.nonnull
+  school "school" bibinfo.warn output
+  address "address" bibinfo.check output
+  format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {misc}
+{ output.bibitem
+  format.authors output
+  add.colon
+  title howpublished new.block.checkb
+  format.title output
+  howpublished new.block.checka
+  howpublished "howpublished" bibinfo.check output
+  format.date output
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+  empty.misc.check
+}
+FUNCTION {phdthesis}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.btitle
+  "title" output.check
+  new.block
+  bbl.phdthesis format.thesis.type output.nonnull
+  school "school" bibinfo.warn output
+  address "address" bibinfo.check output
+  format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {proceedings}
+{ output.bibitem
+  editor empty$
+    { organization "organization" bibinfo.check output
+    }
+    { format.editors output.nonnull }
+  if$
+  add.colon
+  new.block
+  format.btitle "title" output.check
+  format.bvolume output
+  editor empty$
+    { publisher empty$
+        {  format.number.series output }
+        {
+          new.sentence
+          format.number.series output
+          format.publisher.address output
+        }
+      if$
+    }
+    { publisher empty$
+        {
+          new.sentence
+          format.number.series output
+          format.organization.address output }
+        {
+          new.sentence
+          format.number.series output
+          organization "organization" bibinfo.check output
+          format.publisher.address output
+        }
+      if$
+     }
+  if$
+      format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {techreport}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.title
+  "title" output.check
+  new.block
+  format.tr.number output.nonnull
+  institution "institution" bibinfo.warn output
+  address "address" bibinfo.check output
+  format.date "year" output.check
+%  new.block
+  format.url output
+%  new.block
+  format.note output
+  fin.entry
+}
+
+FUNCTION {unpublished}
+{ output.bibitem
+  format.authors "author" output.check
+  add.colon
+  new.block
+  format.title "title" output.check
+  format.date output
+%  new.block
+  format.url output
+%  new.block
+  format.note "note" output.check
+  fin.entry
+}
+
+FUNCTION {default.type} { misc }
+READ
+FUNCTION {sortify}
+{ purify$
+  "l" change.case$
+}
+INTEGERS { len }
+FUNCTION {chop.word}
+{ 's :=
+  'len :=
+  s #1 len substring$ =
+    { s len #1 + global.max$ substring$ }
+    's
+  if$
+}
+FUNCTION {sort.format.names}
+{ 's :=
+  #1 'nameptr :=
+  ""
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { s nameptr
+      "{ll{ }}{  ff{ }}{  jj{ }}"
+      format.name$ 't :=
+      nameptr #1 >
+        {
+          "   "  *
+          namesleft #1 = t "others" = and
+            { "zzzzz" * }
+            { t sortify * }
+          if$
+        }
+        { t sortify * }
+      if$
+      nameptr #1 + 'nameptr :=
+      namesleft #1 - 'namesleft :=
+    }
+  while$
+}
+
+FUNCTION {sort.format.title}
+{ 't :=
+  "A " #2
+    "An " #3
+      "The " #4 t chop.word
+    chop.word
+  chop.word
+  sortify
+  #1 global.max$ substring$
+}
+FUNCTION {author.sort}
+{ author empty$
+    { key empty$
+        { "to sort, need author or key in " cite$ * warning$
+          ""
+        }
+        { key sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+FUNCTION {author.editor.sort}
+{ author empty$
+    { editor empty$
+        { key empty$
+            { "to sort, need author, editor, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { editor sort.format.names }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+FUNCTION {author.organization.sort}
+{ author empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need author, organization, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+FUNCTION {editor.organization.sort}
+{ editor empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need editor, organization, or key in " cite$ * warning$
+              ""
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { editor sort.format.names }
+  if$
+}
+FUNCTION {presort}
+{ type$ "book" =
+  type$ "inbook" =
+  or
+    'author.editor.sort
+    { type$ "proceedings" =
+        'editor.organization.sort
+        { type$ "manual" =
+            'author.organization.sort
+            'author.sort
+          if$
+        }
+      if$
+    }
+  if$
+  "    "
+  *
+  year field.or.null sortify
+  *
+  "    "
+  *
+  title field.or.null
+  sort.format.title
+  *
+  #1 entry.max$ substring$
+  'sort.key$ :=
+}
+ITERATE {presort}
+SORT
+STRINGS { longest.label }
+INTEGERS { number.label longest.label.width }
+FUNCTION {initialize.longest.label}
+{ "" 'longest.label :=
+  #1 'number.label :=
+  #0 'longest.label.width :=
+}
+FUNCTION {longest.label.pass}
+{ number.label int.to.str$ 'label :=
+  number.label #1 + 'number.label :=
+  label width$ longest.label.width >
+    { label 'longest.label :=
+      label width$ 'longest.label.width :=
+    }
+    'skip$
+  if$
+}
+EXECUTE {initialize.longest.label}
+ITERATE {longest.label.pass}
+FUNCTION {begin.bib}
+{ preamble$ empty$
+    'skip$
+    { preamble$ write$ newline$ }
+  if$
+  "\begin{thebibliography}{"  longest.label  * "}" *
+  write$ newline$
+  "\providecommand{\url}[1]{\texttt{#1}}"
+  write$ newline$
+  "\providecommand{\urlprefix}{URL }"
+  write$ newline$
+}
+EXECUTE {begin.bib}
+EXECUTE {init.state.consts}
+ITERATE {call.type$}
+FUNCTION {end.bib}
+{ newline$
+  "\end{thebibliography}" write$ newline$
+}
+EXECUTE {end.bib}
+%% End of customized bst file
+%%
+%% End of file `titto.bst'.
+
+
+
+#+end_src
+
+* Bibtex file                                                      :noexport:
+
+#+begin_src bib :tangle reppar2016.bib
+@article{box2005statistics,
+  title={Statistics for experimenters: design, innovation, and discovery},
+  author={Box, George EP and Hunter, J Stuart and Hunter, William G},
+  journal={AMC},
+  volume={10},
+  pages={12},
+  year={2005}
+}
+
+@INPROCEEDINGS{cicotti2014es,
+	author={Cicotti, P. and Tiwari, A. and Carrington, L.},
+	booktitle={Intl. Conf. on Cluster Comp.},
+	title={Efficient speed(ES): Adaptive DVFS and clock modulation for energy efficiency},
+	year={2014},
+	pages={158-166},
+	keywords={energy conservation;power aware computing;GAMESS package;adaptive DVFS;clock modulation;dynamic voltage and frequency scaling;efficient speed library;energy efficiency;energy measurement;energy savings;performance loss bound;performance measurement;power 20 MW;power envelope;quantum chemistry package;reconfigurable system;scientific computing;Benchmark testing;Clocks;Hardware;Instruments;Libraries;Modulation;Optimization},
+	doi={10.1109/CLUSTER.2014.6968750},}
+
+@Article{Dick2015,
+author="Dick, Bj{\"o}rn
+and Vogel, Andreas
+and Khabi, Dmitry
+and Rupp, Martin
+and K{\"u}ster, Uwe
+and Wittum, Gabriel",
+title="Utilization of empirically determined energy-optimal CPU-frequencies in a numerical simulation code",
+journal="Computing and Visualization in Science",
+year="2015",
+volume="17",
+number="2",
+pages="89--97",
+abstract="In order to enable exascale computing, concepts for substantial energy savings are required. Dynamic voltage and frequency scaling (DVFS) is widely known to provide suitable energy saving potentials. However, the customarily utilized DVFS mechanism of the Linux kernel determines clock frequencies solely based on an idle time analysis. In contrast to this, we use an empirical approach based on preparatory measurements of the energy consumption at all available frequencies. From the resulting data we deduce energy-optimal frequencies, which are used in subsequent production runs. The described methodology can be deployed with routine granularity to account for varying code characteristics. For evaluation purposes, the approach is applied to the UG4 numerical simulation software. First results exhibit an average energy saving potential of approximately 10 \% while increasing the runtime by about 19 \%.",
+issn="1433-0369",
+}
+
+@Book{Ehrgott2000,
+author = {M. Ehrgott},
+title = {Multicriteria optimization},
+publisher = {Springer},
+year = {2000},
+series = {LNEMS},
+
+}
+
+@inproceedings{Freeh:2005:UME:1065944.1065967,
+ author = {Freeh, Vincent W. and Lowenthal, David K.},
+ title = {Using Multiple Energy Gears in MPI Programs on a Power-scalable Cluster},
+ booktitle = {Symp. on Princ. and Pract. of Par. Prog.},
+ year = {2005},
+ isbn = {1-59593-080-9},
+ location = {IL, USA},
+ numpages = {10},
+ acmid = {1065967},
+ publisher = {ACM},
+ keywords = {high-performance computing, power-aware computing},
+}
+
+@misc{green500,
+  title={Green500},
+  year={2015},
+  author =  {Subramaniam, Balaji and others},
+}
+
+
+@techreport{heroux2009improving,
+	title={{Improving Performance via Mini-applications}},
+	author={Heroux, Michael A and Doerfler, Douglas W and Crozier, Paul S and Willenbring, James M and Edwards, H Carter and Williams, Alan and Rajan, Mahesh and Keiter, Eric R and Thornquist, Heidi K and Numrich, Robert W},
+	institution={Sandia},
+	number = {SAND2009-5574},
+	year={2009}
+}
+
+
+@INPROCEEDINGS{hotta2006profile, 
+author={Hotta, Y. and Sato, M. and Kimura, H. and Matsuoka, S. and Boku, T. and Takahashi, D.}, 
+booktitle={IPDPS}, 
+title={Profile-based opt. of power perf. by using dynamic voltage scaling on a PC cluster}, 
+year={2006}, 
+doi={10.1109/IPDPS.2006.1639597}, 
+}
+
+@inproceedings{hsu2005feasibility,
+  title={A feasibility analysis of power awareness in commodity-based high-performance clusters},
+  author={Hsu, C-H and Feng, Wu-chun},
+  booktitle={Cluster Computing},
+  pages={1--10},
+  year={2005},
+  organization={IEEE}
+}
+
+
+@manual{intel2013,
+  author = {Intel},
+  month = {Setptember},
+  organization = {Intel Corporation},
+  title = {Intel 64 and IA-32 Architectures Software Developer's Manual - Volume 3B},
+  year = {2013}
+}
+
+
+@book{Johnson:1988:AMS:59551,
+ editor = {Johnson, R. A. and Wichern, D. W.},
+ title = {Applied Multivariate Statistical Analysis},
+ year = {1988},
+ isbn = {0-130-41146-9},
+ publisher = {Prentice-Hall, Inc.},
+ address = {Upper Saddle River, NJ, USA},
+} 
+
+
+@article{jones2011class,
+  title={A class of three-level designs for definitive screening in the presence of second-order effects},
+  author={Jones, Bradley and Nachtsheim, Christopher J},
+  journal={Quality Technology},
+  volume={43},
+  number={1},
+  pages={1--15},
+  year={2011},
+  publisher={American Society for Quality}
+}
+
+
+@INPROCEEDINGS{kerbyson2011energytemplates, 
+author={Kerbyson, D.K. and Vishnu, A. and Barker, K.J.}, 
+booktitle={IEEE Intl. Conf. on Cluster Comp.}, 
+title={Energy Templates: Exploiting Application Information to Save Energy}, 
+year={2011}, 
+pages={225-233}, 
+doi={10.1109/CLUSTER.2011.33}, 
+}
+
+
+@Inproceedings{Laurenzano2011,
+author="Laurenzano, Michael A.
+and Meswani, Mitesh
+and Carrington, Laura
+and Snavely, Allan
+and Tikir, Mustafa M.
+and Poole, Stephen",
+title="Reducing Energy Usage with Memory and Computation-Aware Dynamic Frequency Scaling",
+booktitle="17th Euro-par Intl. Conference",
+year="2011",
+publisher="Springer",
+address="Berlin",
+pages="79--90",
+isbn="978-3-642-23400-2",
+}
+
+@INPROCEEDINGS{lim2006commphases,
+author={Lim, M.Y. and Freeh, Vincent W. and Lowenthal, D.K.}, 
+booktitle={SuperComp.}, 
+title={Adaptive, Transparent Frequency and Voltage Scaling of Communication Phases in MPI Programs}, 
+year={2006}, 
+pages={14-14}, 
+keywords={message passing;performance evaluation;power aware computing;supervisory programs;CPU performance;MPI program;communication phase;high-performance computing;message passing;microprocessor;power consumption;transparent frequency;voltage scaling;Computer science;Costs;Dynamic voltage scaling;Energy consumption;Fission reactors;Frequency;High performance computing;Microprocessors;Permission;USA Councils}, 
+doi={10.1109/SC.2006.11},}
+
+@article{Lim2011667,
+title = "Adaptive, transparent CPU scaling algo. leveraging inter-node MPI comm. regions ",
+journal = "Par. Comp.",
+volume = "37",
+number = "10–11",
+pages = "667-683",
+year = "2011",
+note = "",
+issn = "0167-8191",
+doi = "http://dx.doi.org/10.1016/j.parco.2011.07.001",
+author = "Min Yeol Lim and Vincent W. Freeh and David K. Lowenthal",
+keywords = "Power-aware computing",
+keywords = "Message passing interface (MPI) "
+}
+
+
+@article{metamodels,
+	year={2001},
+	issn={0177-0667},
+	journal={Eng. with Comp.},
+	volume={17},
+	number={2},
+	doi={10.1007/PL00007198},
+	title={Metamodels for Computer-based Engineering Design: survey and recomm.},
+	publisher={Springer},
+	keywords={Keywords.Deterministic analysis; Engineering design; Kriging; Metamodels; Robust design; RSM},
+	author={Simpson, T.W. and Poplinski, J.D. and Koch, P. N. and Allen, J.K.},
+	pages={129-150},
+	language={English}
+}
+
+
+@book{montgomery2008design,
+	title={Design and analysis of experiments},
+	author={Montgomery, Douglas C},
+	year={2008},
+	publisher={John Wiley \& Sons}
+}
+
+@article{murphy2010introducing,
+  title={Introducing the graph 500},
+  author={Murphy, Richard C and Wheeler, Kyle B and Barrett, Brian W and Ang, James A},
+  journal={Cray User’s Group (CUG)},
+  year={2010}
+}
+
+@INPROCEEDINGS{padoin2014HiPC, 
+author={Padoin, E.L. and Castro, M. and Pilla, L.L. and Navaux, P.O.A. and Mehaut, J.-F.}, 
+booktitle={Intl. Conf. on HPC}, 
+title={Saving energy by exploiting residual imbalances on iterative applications}, 
+year={2014}, 
+doi={10.1109/HiPC.2014.7116895}
+}
+
+@article {peraza2013pcmacs,
+author = {Peraza, Joshua and Tiwari, Ananta and Laurenzano, Michael and Carrington, Laura and Snavely, Allan},
+title = {PMaC's green queue: a framework for selecting energy optimal DVFS configurations in large scale MPI applications},
+journal = {Conc. and Comp.: Prac. and Exp.},
+volume = {28},
+number = {2},
+publisher = {John Wiley & Sons, Ltd},
+issn = {1532-0634},
+pages = {211--231},
+keywords = {energy efficiency, dynamic voltage-frequency scaling, high performance computing, green computing, application characterization, workload characterization, performance modeling, power modeling},
+year = {2013},
+}
+
+
+@ARTICLE{powerpack,
+author={Rong Ge and Xizhou Feng and Shuaiwen Song and Hung-Ching Chang and Dong Li and Cameron, K.W.},
+journal={Parallel and Distributed Systems, IEEE Transactions on},
+title={PowerPack: Energy Profiling and Analysis of High-Performance Systems and Applications},
+year={2010},
+month={May},
+volume={21},
+number={5},
+pages={658-671},
+keywords={energy conservation;multiprocessing systems;parallel processing;power aware computing;power consumption;DVFS scheduling;PowerPack;dynamic voltage and frequency scaling techniques;energy consumption;energy efficiency;energy profiling;high-performance computing system design;multicore support systems;multiprocessor-based nodes;power efficiency;CMP-based cluster;Distributed system;dynamic voltage and frequency scaling.;energy efficiency;power management;power measurement;system tools},                                                         
+doi={10.1109/TPDS.2009.76},
+ISSN={1045-9219},}
+
+
+@inproceedings{Rountree:2009:AMD:1542275.1542340,
+ author = {Rountree, Barry and Lownenthal, David K. and de Supinski, Bronis R. and Schulz, Martin and Freeh, Vincent W. and Bletsch, Tyler},
+ title = {Adagio: Making DVS Practical for Complex HPC Applications},
+ booktitle = {Proceedings of the 23rd International Conference on Supercomputing},
+ year = {2009},
+ isbn = {978-1-60558-498-0},
+ location = {Yorktown Heights, NY, USA},
+ pages = {460--469},
+ numpages = {10},
+ doi = {10.1145/1542275.1542340},
+ acmid = {1542340},
+ publisher = {ACM},
+ keywords = {dvfs, dvs, energy, mpi, runtime},
+} 
+
+@inproceedings{Shun:2012:BAP:2312005.2312018,
+ author = {Shun, Julian and Blelloch, Guy E. and Fineman, Jeremy T. and Gibbons, Phillip B. and Kyrola, Aapo and Simhadri, Harsha Vardhan and Tangwongsan, Kanat},
+ title = {Brief Announcement: The Problem Based Benchmark Suite},
+ booktitle = {24th Annual ACM Symp. on Paral. in Algorith. and Arch.},
+ year = {2012},
+ isbn = {978-1-4503-1213-4},
+ location = {Pittsburgh, Pennsylvania, USA},
+ pages = {68--70},
+ numpages = {3},
+ doi = {10.1145/2312005.2312018},
+ acmid = {2312018},
+ publisher = {ACM},
+ address = {NY, USA},
+ keywords = {algorithm performance, benchmarking, parallel algorithms},
+} 
+
+
+@INPROCEEDINGS{tiwari2012greenqueue, 
+author={Tiwari, A. and Laurenzano, M. and Peraza, J. and Carrington, L. and Snavely, A.}, 
+booktitle={Intl. Conf. on Cloud and Green Comp.}, 
+title={Green Queue: Customized Large-Scale Clock Frequency Scaling}, 
+year={2012}, 
+pages={260-267}, 
+keywords={application program interfaces;energy conservation;green computing;message passing;multiprocessing systems;power aware computing;CPU clock frequency scaling;DVFS;Gordon;HPC system;Intel Sandy bridge-based supercomputer;MPI;San Diego Supercomputer Center;customized large-scale clock frequency scaling;dynamic voltage-frequency scaling;energy savings;green queue framework;high performance computing;internode technique;intranode technique;message passing interface;Clocks;Green products;Hardware;Load modeling;Power measurement;Queueing analysis;Runtime}, 
+doi={10.1109/CGC.2012.62}, 
+month={Nov},}
+
+@inproceedings{Venkatesh:2015:CAE:2807591.2807658,
+ author = {Venkatesh, Akshay and Vishnu, Abhinav and Hamidouche, Khaled and Tallent, Nathan and Panda, Dhabaleswar (DK) and Kerbyson, Darren and Hoisie, Adolfy},
+ title = {A Case for Application-oblivious Energy-efficient MPI Runtime},
+ booktitle = {Intl. Conf. for High Perf. Comp., Net., Stor. and Anal.},
+ year = {2015},
+ isbn = {978-1-4503-3723-6},
+ location = {Austin, Texas},
+ pages = {29:1--29:12},
+ articleno = {29},
+ numpages = {12},
+ acmid = {2807658},
+ address = {NY, USA},
+}
+
+@book{wu2000experiments,
+  added-at = {2009-10-28T04:42:52.000+0100},
+  author = {Wu, C.F.J. and Hamada, M. and Wu, C.F.},
+  biburl = {http://www.bibsonomy.org/bibtex/2241de1de1fb70ba360e68a34f71e2192/jwbowers},
+  date-added = {2009-10-22 10:59:29 -0500},
+  date-modified = {2009-10-22 10:59:29 -0500},
+  interhash = {c748d1f096fc3032aaf983182bc4f0a5},
+  intrahash = {241de1de1fb70ba360e68a34f71e2192},
+  keywords = {imported},
+  publisher = {Wiley New York},
+  timestamp = {2009-10-28T04:42:53.000+0100},
+  title = {Experiments: planning, analysis, and parameter design optimization},
+  year = 2000
+}
+
+
+
+#+end_src
+
+* Initialization                                                   :noexport:
+** Shell scripts:
+#+name: pdfcrop
+#+header: :var file="all_runtime.pdf"
+#+BEGIN_SRC sh :results silent :exports none
+pdfcrop img/$file
+echo "Cropping done"
+#+END_SRC
+
+* Configuring org-mode to know how to export the llncs class       :noexport:
+
+Org mode is configured by default to export only the base classes.
+
+See for details:
++ http://orgmode.org/worg/org-tutorials/org-latex-export.html
+
+Execute the following code prior to export this file to PDF.
+
+#+BEGIN_SRC emacs-lisp :results silent :exports none
+(add-to-list 'org-latex-classes
+             '("llncs"
+               "\\documentclass{llncs}"
+               ("\\section{%s}" . "\\section*{%s}")
+               ("\\subsection{%s}" . "\\subsection*{%s}")
+               ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+               ("\\paragraph{%s}" . "\\paragraph*{%s}")
+               ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+#+END_SRC
+* Emacs Setup 							   :noexport:
+  This document has local variables in its postembule, which should
+  allow org-mode to work seamlessly without any setup. If you're
+  uncomfortable using such variables, you can safely ignore them at
+  startup. Exporting may require that you copy them in your .emacs.
+
+# Local Variables:
+# eval: (require 'org-install)
+# eval: (add-to-list 'org-latex-classes '("llncs" "\\documentclass{llncs}" ("\\section{%s}" . "\\section*{%s}") ("\\subsection{%s}" . "\\subsection*{%s}") ("\\subsubsection{%s}" . "\\subsubsection*{%s}") ("\\paragraph{%s}" . "\\paragraph*{%s}") ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+# End:
+
+* R backend code                                                   :noexport:
+#+BEGIN_SRC R :session :results output silent
+library(ggplot2)
+library(ggrepel)
+library(FrF2)
+library(plyr)
+
+get_label = function(d){
+  e = d[,which(names(d) %in% get_regions(d))]
+  if(typeof(e)=='list')
+    s = by(e, 1:nrow(e),   function(x){paste(x,collapse='')})
+  else
+    s = by(e, 1:length(e), function(x){paste(x,collapse='')})
+  s = gsub('1','+',gsub('-1','-',s))
+  return(unname(s))
+}
+
+get_regions = function(d){
+# returns a list of all columns of d which are regions
+# breaks with more than a few regions because of 32-bit bs
+  r = NULL
+  for(x in names(d)){
+    if(all(as.character(d[[x]]) %in% as.character(c(-1,1))))
+      r = c(r,x)
+  }
+  return(sort(r))
+}
+
+get_aov = function(d,what){
+  form = ''
+  regions = get_regions(d)
+  for(x in regions)
+    form = paste(form,x,sep='+')
+  form = substr(form,2,999)
+  x = d
+  for(y in regions)
+    x[[y]] = as.factor(ifelse(x[[y]]==1,'+','-'))
+  x$`Energy (J)` = x$energy
+  x$`Time (s)` = x$time
+  x$`Energy-Delay Product` = x$edp
+  x$Energy = x$energy
+  x$Time = x$time
+  x$EDP = x$edp
+  return(aov(as.formula(paste(what,'~',form)),x))
+}
+
+remove_extra_columns = function(d, baseline){
+  y = get_regions(baseline)
+  for(x in get_regions(d))
+    if(! x %in% y)
+      d[[x]] = NULL
+  d$label = get_label(d)
+  return(d)
+}
+
+remove_outliers = function(d,n,bycol){
+  if(missing(bycol))
+    bycol = 'st'
+  if(missing(n))
+    n = as.integer(length(d[[bycol]])/length(unique(d[[bycol]]))/20)
+  if(0==n) return(d)
+  for(y in unique(d[[bycol]])){
+    for(g in c(min,max)){
+      for(x in 1:n){
+        bad = which(d[[bycol]]==y & d$time==g(d[d[[bycol]]==y,]$time))[1]
+        d = d[-bad,]
+      }
+    }
+  }
+  return(d)
+}
+
+get_experiments = function(inputFiles){
+# reads experimental results from a list of files
+# each file is considered to be from a different input
+# results from different inputs are added together
+  if('character' == typeof(inputFiles))
+    inputFiles = c(inputFiles)
+  e = list()
+  for(x in inputFiles){
+    e[[length(e)+1]] = read.csv(x)
+    e[[length(e)]][[names(e[[1]][1])]] = NULL # drop run id
+    e[[length(e)]] = e[[length(e)]][with(e[[length(e)]],order(st)),]
+  }
+  # sanity check
+  for(y in e){
+    stopifnot(all(dim(y)==dim(e[[1]])) && 1 == length(unique(y$nthreads))
+              && unique(y$nthreads)==unique(e[[1]]$nthreads)
+              && all(y$st==e[[1]]$st))
+  }
+  # sum runtime and energy of different inputs
+  d = NULL
+  n = dim(e[[1]])[1]
+  for(what in c('time','pkg0','pkg1','pp00','pp01','dram0','dram1')){
+    d[[what]] = rep(0,n)
+    for(y in e)
+      d[[what]] = d[[what]] + y[[what]]
+  }
+  # calculate total energy from pkg + dram of both cpus
+  d$energy = d$pkg0 + d$pkg1 + d$dram0 + d$dram1
+  # copy columns such as regions and strategy names
+  for(what in names(e[[1]])){
+    if(!what %in% names(d)){
+      allEq = T
+      for(x in e){
+        if(!all(as.character(x[[what]])==as.character(e[[1]][[what]]))){
+          allEq = F
+          break
+        }
+      }
+      if(allEq)
+        d[[what]] = e[[1]][[what]]
+    }
+  }
+  d = data.frame(d)
+  # name strategies
+  count = 0
+  d$count = 0
+  for(x in c('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
+             'P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d',
+             'e','f','g','h','i','j','k','l','m','n','o','p','q','r','s',
+             't','u','v','w','x','y','z')){
+    if(! x %in% names(d)) next
+    count = count + 1
+    d$count = d$count + d[[x]]
+  }
+  d$strategy = 'region'
+  if(count %in% d$count)
+    d[d$count ==  count,]$strategy = 'high'
+  if(-count %in% d$count)
+    d[d$count == -count,]$strategy = 'low'
+  d$count = NULL
+
+  d$edp = d$energy * d$time
+  d$power = d$energy / d$time
+  d$label = get_label(d)
+  return(d)
+}
+
+my_mean <- function (data)
+{
+  ddply(data, .(label), summarize, 
+        time = mean(time),
+        energy = mean(energy));
+}
+
+
+high_low_labels <- function (ddf, label_high, label_low)
+{
+  hll = ddf;
+  hll$label[hll$label == label_high] <- "HIGH";
+  hll$label[hll$label == label_low] <- "LOW";
+  # get pareto
+  dfp <- get_pareto (ddf, label_high, label_low);
+  # remove first and last lines from pareto (Inf)
+  n<-dim(dfp)[1];
+  dfp<-dfp[2:(n-1),];
+  for(i in c("HIGH", "LOW")){
+    if(nrow(dfp[dfp$label == i,]) != 0){
+       hll <- hll[hll$label != i,];
+    }
+  }
+  hll <- hll[hll$label == "HIGH" | hll$label == "LOW",];
+  return (hll);
+}
+
+get_pareto <- function (data, label_high, label_low)
+{
+  ddf <- my_mean (data);
+  dfp <- calculate_pareto (ddf$time, ddf$energy, ddf$label);
+  # check if pareto has label_high, if it does, replace by HIGH
+  dfp$label[dfp$label == label_high] <- "HIGH";
+  dfp$label[dfp$label == label_low] <- "LOW";
+  # remove high and low, if present in pareto
+  dfp <- dfp[dfp$label != label_high & dfp$label != label_low,];
+  # get high and low
+  #high_low <- ddf[ddf$label == label_high | ddf$label == label_low,];
+  # bind together
+  #dfp <- rbind (dfp, high_low);
+  # order, remove duplicates again
+  dfp = dfp[order(dfp$time,dfp$energy,decreasing=FALSE),];
+  dfp = dfp[which(!duplicated(cummin(dfp$energy))),];
+  # add infinite limits finally
+  dfp = rbind(c(NA,dfp$time[1],Inf), dfp);
+  dfp = rbind(dfp, c(NA,Inf,dfp$energy[dim(dfp)[1]]));
+  dfp;
+}
+
+calculate_pareto <- function (var1, var2, label)
+{
+  d = data.frame(label=label, V1=var1, V2=var2);
+  D = d[order(d$V1,d$V2,decreasing=FALSE),]
+  front = D[which(!duplicated(cummin(D$V2))),]
+  names(front) <- c("label", "time", "energy");
+  front;
+}
+
+
+#' @rdname ggplot2-ggproto
+#' @format NULL
+#' @usage NULL
+#' @export
+StatEllipse <- ggproto("StatEllipse", Stat,
+  required_aes = c("x", "y"),
+
+  compute_group = function(data, scales, type = "t", level = 0.95,
+                           segments = 51, na.rm = FALSE) {
+    calculate_ellipse(data = data, vars = c("x", "y"), type = type,
+                      level = level, segments = segments)
+  }
+)
+
+calculate_ellipse <- function(data, vars, type, level, segments){
+  dfn <- 2
+  dfd <- nrow(data) - 1
+
+  if (!type %in% c("t", "norm", "euclid")) {
+    message("Unrecognized ellipse type")
+    ellipse <- rbind(as.numeric(c(NA, NA)))
+  } else if (dfd < 3) {
+    message("Too few points to calculate an ellipse")
+    ellipse <- rbind(as.numeric(c(NA, NA)))
+  } else {
+    if (type == "t") {
+      v <- MASS::cov.trob(data[,vars])
+    } else if (type == "norm") {
+      v <- stats::cov.wt(data[,vars])
+    } else if (type == "euclid") {
+      v <- stats::cov.wt(data[,vars])
+      v$cov <- diag(rep(min(diag(v$cov)), 2))
+    }
+    shape <- v$cov
+    center <- v$center
+    chol_decomp <- chol(shape)
+    chol_decomp = chol_decomp
+    if (type == "euclid") {
+      radius <- level/max(chol_decomp)
+    } else {
+      radius <- sqrt(dfn * stats::qf(level, dfn, dfd))/ sqrt(dfd) ### HERE!!!
+    }
+    angles <- (0:segments) * 2 * pi/segments
+    unit.circle <- cbind(cos(angles), sin(angles))
+    ellipse <- t(center + radius * t(unit.circle %*% chol_decomp))
+  }
+
+  ellipse <- as.data.frame(ellipse)
+  colnames(ellipse) <- vars
+  ellipse
+}
+
+stat_ellipse_arnaud <- function(mapping = NULL, data = NULL,
+                         geom = "path", position = "identity",
+                         ...,
+                         type = "t",
+                         level = 0.95,
+                         segments = 51,
+                         na.rm = FALSE,
+                         show.legend = NA,
+                         inherit.aes = TRUE) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = StatEllipse,
+    geom = geom,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      type = type,
+      level = level,
+      segments = segments,
+      na.rm = na.rm,
+      ...
+    )
+  )
+}
+
+get_all_baseline = function(name,freqs){
+  b = NULL
+  if(missing(freqs))
+    freqs = 1:23
+  for(f in freqs){
+    fname = paste('data/',name,'-baseline-',f,'.csv',sep='')
+    if(file.exists(fname)){
+      b = rbind(b, get_experiments(fname))
+    }else{
+      inpt = 0
+      fname = paste('data/',name,'-baseline-',f,'-',inpt,'.csv',sep='')
+      while(file.exists(fname)){
+        b = rbind(b, get_experiments(fname))
+        fname = paste('data/',name,'-baseline-',f,'-',inpt,'.csv',sep='')
+        inpt = inpt + 1
+      }
+    }
+  }
+  for(x in c('high','low'))
+    b[[x]] = as.factor(b[[x]])
+  return(b)
+}
+
+# minifeopt
+minifeoptFull = get_experiments('data/minifeopt.csv')
+minifeoptFull = remove_outliers(minifeoptFull)
+
+# HPCCG
+hpccgFull = get_experiments('data/hpccg.csv')
+hpccgFull = remove_outliers(hpccgFull)
+
+# COMD
+comdFull = get_experiments('data/comd.csv')
+comdFull = remove_outliers(comdFull)
+
+# pathfinder
+pathfinderFull = get_experiments('data/pathfinder.csv')
+pathfinderFull = remove_outliers(pathfinderFull)
+
+# graph500
+graph500Screening = get_experiments('data/graph500-screening.csv')
+graph500Full = get_experiments('data/graph500.csv')
+graph500Screening = remove_outliers(graph500Screening)
+graph500Full = remove_outliers(graph500Full)
+
+# bfs
+bfsFull = get_experiments(c('data/bfs-0.csv','data/bfs-1.csv','data/bfs-2.csv'))
+bfsFull = remove_outliers(bfsFull)
+
+# delaunay
+delaunayFull = get_experiments(c('data/delaunay-0.csv','data/delaunay-1.csv'))
+delaunayFull = remove_outliers(delaunayFull)
+#+END_SRC
+
+* Generate analysis plots                                          :noexport:
+** ME Plots
+
+#+begin_src R :results output graphics :file img/graph500_me_energy.pdf :exports none :width 11 :height 3 :session
+MEPlot(get_aov(graph500Screening,'energy'),cex.xax=1.4,cex.yax=1.7,cex.main=2,main=NA)
+#+end_src
+
+#+RESULTS:
+[[file:img/graph500_me_energy.pdf]]
+
+#+begin_src R :results output graphics :file img/graph500_me_time.pdf :exports none :width 11 :height 3 :session
+MEPlot(get_aov(graph500Screening,'time'),cex.xax=1.4,cex.yax=1.7,cex.main=2,main=NA)
+#+end_src
+
+#+RESULTS:
+[[file:img/graph500_me_time.pdf]]
+
+#+call: pdfcrop(file="graph500_me_energy.pdf") :results output silent
+#+call: pdfcrop(file="graph500_me_time.pdf") :results output silent
+
+** Instructions for Pareto Plots
+
+Follow instructions here:
+- [[*Pareto Plots][Pareto Plots]]
+
+Then, pdfcrop the resulting images:
+
+#+call: pdfcrop(file="graph500-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="bfs-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="delaunay-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="minifeopt-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="hpccg-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="comd-pareto-zoom.pdf") :results output silent
+#+call: pdfcrop(file="pathfinder-pareto-zoom.pdf") :results output silent
+
+* Introduction
+
+Performance has historically overshadowed energy efficiency in the HPC
+field. This scenario is changing and initiatives focusing on energy
+efficiency, like the Green500 list\mtilde\cite{green500}, have gained
+importance. The current leader of Green500 offers only 7.0GFLOPs per
+watt. Considering a 20MW exascale supercomputer, the efficiency would
+have to be of at least 50GFLOPs per watt.  Improvements must be made
+from both the hardware and software sides to make the leap in energy
+efficiency.  Strategies for energy reduction in parallel applications
+are a step forward to address the problem from the software side.
+
+Software energy reduction strategies can be divided in two groups:
+inter-node\mtilde\cite{cicotti2014es}, acting in the system level; and
+intra-node, where code regions are subject to power manipulation.
+Usually, application idle states trigger these strategies.
+Opportunities appear during load
+imbalances\mtilde\cite{padoin2014HiPC}, blocking communication
+phases\mtilde\cite{lim2006commphases,Rountree:2009:AMD:1542275.1542340},
+inter-node communication\mtilde\cite{Lim2011667},
+MPI operations\mtilde\cite{Venkatesh:2015:CAE:2807591.2807658}, and wait
+states\mtilde\cite{kerbyson2011energytemplates}. Correlating 
+power consumption to source code is also
+explored\mtilde\cite{powerpack}.
+Dynamic Voltage Frequency Scaling\mtilde\cite{hsu2005feasibility}
+(DVFS) is frequently used,
+attempting different processor frequencies
+to execute code
+regions, targeting energy savings with minimal or no performance
+loss\mtilde\cite{Freeh:2005:UME:1065944.1065967}.
+
+HPC applications commonly have many parallel regions subject to 
+frequency scaling. For example, Graph500\mtilde\cite{murphy2010introducing}
+has 17 parallel regions; MiniFE\mtilde\cite{heroux2009improving}
+has 25. Large HPC codes may have hundreds depending on the application
+complexity and code size.  It is unrealistic to evaluate all
+time-energy trade-offs considering several processor
+frequencies.
+The experimental time would be too large, even more
+as replications are necessary to account for variability.
+Others\mtilde\cite{Freeh:2005:UME:1065944.1065967,Laurenzano2011} have
+adopted similar per-region strategies but they use simple experimental
+designs meant to find not all time-energy trade-offs, but a
+single per-region frequency combination (details in
+Section\mtilde\ref{sec:relatedwork}).
+
+The objective of this work is to discover all
+the time-energy
+trade-offs when adopting per-region processor
+frequency scaling. We tackle the explosion in experimental time with a
+workflow based on Design of Experiments (DoE)
+techniques\mtilde\cite{wu2000experiments}, such as screening and full
+factorial designs, ANOVA, and main effect
+plots\mtilde\cite{montgomery2008design}.  
+Final results are analyzed with a customized bivariate Pareto front
+plot demonstrating experimental variability.  As far as we know, this
+is the first time such combined framework is used to evaluate energy
+savings in HPC.
+
+We report the use of our methodology for seven OpenMP benchmarks with
+many parallel code regions, each with interesting Pareto fronts with
+distinct shapes.  Among them, out of the 25 parallel regions of the
+MiniFE benchmark, we detect configurations which reduce energy in
+9.27% with a non-significant penalty in runtime when compared with
+using the high frequency for all regions; and, for the Graph500
+benchmark with 17 parallel regions, we spot a 5.59% execution time reduction
+with a non-significant increase in energy consumption, when comparing
+against running all regions in the lowest frequency.
+
+Section\mtilde\ref{sec:relatedwork} positions our work against related
+work. Section\mtilde\ref{sec:background} presents basic concepts about
+DoE. Section\mtilde\ref{sec:methodology} details our
+methodology. Section\mtilde\ref{sec:evaluation}
+has the evaluation of seven benchmarks.
+Conclusion and future work appears
+in Section\mtilde\ref{sec:conclusion}.
+
+All data used in this paper, and the org-mode file used to generate
+it, is publicly available on [[https://github.com/lfgmillani/reppar2016][https://github.com/lfgmillani/reppar2016]].
+* Related Work
+\label{sec:relatedwork}
+
+There has been a lot of effort to save energy with minimal performance
+loss in HPC systems.  We focus in application-aware strategies that
+consider code regions.
+Freeh et
+al.\mtilde\cite{Freeh:2005:UME:1065944.1065967} propose per-phase
+frequency scaling in HPC applications.  They define the best processor
+frequency combination by testing all possible frequencies one by one,
+sequentially and in order. This is an one-phase at a time design,
+with a linear experimental time according to the
+number of phases and processor frequencies.  Our approach differs in
+two main aspects.  First, while they verify one factor at a time, our
+approach combines screening, rapidly discovering regions affecting
+outcomes, with full factorial designs, detecting all time-energy trade-offs.
+One factor at a time designs capture only a small subset of such
+trade-offs.
+Second, while Freeh et al. evaluate all available
+frequencies, we are limited to two.
+Statistical data analysis lacks established tools to analyze
+measurements with three or more levels per factor (see
+Sec.\mtilde\ref{sec:background} for details).
+
+Laurenzano et al.\mtilde\cite{Laurenzano2011} also propose a
+fine-grained approach to define the best per-loop processor frequency.
+They generate a series of loops configured with different
+CPU and memory behavior. In a system characterization step, each loop
+configuration is evaluated against all possible processor frequencies,
+ultimately defining which frequency is the best. The real HPC
+application loops are each one profiled for cache hit rates,
+flops, and number of memory accesses, forming a loop
+signature. Frequency determination is obtained by searching the
+closest point of the loop signature in the system characterization
+data. Our methodology differs because it works directly with the
+application code in our screening warm up step.
+Our methodology also enables the discovery of all time-energy
+trade-offs that belong to the Pareto front, instead
+of searching for a single best combination as they do.
+Laurenzano's approach has been extended by Tiwari et
+al.\mtilde\cite{tiwari2012greenqueue} with Green Queue, using 
+eight dimensions for frequency selection.
+Peraza et al.\mtilde\cite{peraza2013pcmacs} 
+combine power models and performance measurements, using a
+method that requires only one application run per frequency
+configuration. Such technique makes it impossible to detect correlations
+between frequency configurations on different parts of the program,
+something we address in our method by using a full factorial design.
+
+There are other approaches. Use of runtime
+systems\mtilde\cite{Rountree:2009:AMD:1542275.1542340} to detect frequencies for code
+regions that give a good balance between performance and energy, those
+that use profile-based information\mtilde\cite{hotta2006profile} to
+find the best frequencies, and
+analytical\mtilde\cite{kerbyson2011energytemplates} and prediction
+models\mtilde\cite{powerpack}. Preparatory measurements
+with all available frequencies are also conducted by
+Dick et al.\mtilde\cite{Dick2015} on a numerical simulation code to deduce
+the best frequencies in a per-routine basis.
+* Background of Design of Experiments
+\label{sec:background}
+
+In Design of Experiments (DoE), factors are variables that can affect
+the outcome, such as the compiler used, the CPU architecture, the
+number of cores, etc. They can be quantitative or qualitative.  We
+present a background of DoE concepts, essential for a good
+understanding of our experimental methodology.
+
+\medskip
+
+\noindent
+*Full Factorial Designs*. 
+The full factorial experimental design
+keeps the effect of factors
+orthogonal\mtilde\cite{montgomery2008design}, when
+level distribution is balanced. The
+orthogonality is important when analyzing experimental results, as it
+allows the effect of each factor to be estimated independently.  With
+$n$ factors, a two-level full factorial design requires $2^n$
+experiments.  Since experimental size grows exponentially with
+the number of factors, its adoption is unfeasible with many
+factors.
+Full factorial designs enable the detection
+of interactions among factors. Such
+interaction means that simultaneous changes in multiple
+factors have combined effects in the measured outcome. This implies that
+a factor's effect in the outcome depends on another factor. As far as we
+know, factor interaction is undeveloped (see
+Section\mtilde\ref{sec:relatedwork}), being one of the advantages of
+our approach.
+Full factorial designs can also be generated for more levels. With $l$
+levels and $n$ factors, this kind of design requires $l^n$
+experiments. Although possible, the use of $l>2$ is rare in statistics
+since there is no rigorous statistical analysis available as of today.
+For that reason, we limit our methodology to two-level full
+factorial designs, forcing the analyst to choose two frequencies out
+of those available.
+*Main effects plots* can be used to analyze results obtained from
+factorial designs. They quantify how much each of the factors affects
+the response. The main effect of each factor is the difference between
+the mean response for that factor considering its two possible
+levels\mtilde\cite{box2005statistics}.
+
+\medskip
+
+\noindent
+*Fractional and Screening Designs*. 
+The sparsity of effects principle asserts a system is usually
+dominated by main effects and low order
+interactions\mtilde\cite{montgomery2008design}.  As such, identifying
+factors responsible for the majority of the effect being measured
+does not require expensive $2^n$ full factorial designs.
+This principle does not hold when there are
+complex interactions between the factors.
+Fractional factorial and screening designs require less experimental
+effort than full factorial designs and still give a good exploration
+of the configuration space.  These designs can be used to screen which
+factors have the most effect. While common in some sciences due to the
+high cost of each experiment, fractional factorial designs are not
+often used in parallel computing, where the preference is with
+one-factor-at-a-time designs or in rare cases full factorial designs.
+Fractional designs can be extremely useful when the full factorial
+design requires many experiments, as it can reduce experimental time.
+Even for a low number of factors the number of experiments can be
+considerably reduced. These designs have $2^{k-p}$ runs, where $k$ is the
+number of factors and $p$ is used to limit the experiment size, at the
+price of losing complex relations as $p$ grows.
+*Plackett-Burman (PB)* designs are a kind of fractional design that is
+mostly used for screening\mtilde\cite{metamodels}.  The number of runs
+of Plackett-Burman designs is always a multiple of four. 
+A PB design is
+identical to a fractional design iff its number of runs is a power of
+two. When it is not, PB designs are non-geometrical. This kind of
+design has more complex aliasing patterns, making analysis of the
+interactions between the factors more difficult. When there are only
+minor interactions, the non-geometric designs can save experimental
+time.
+Screening designs with more than two levels are still an open research
+question in statistics.
+Three-level screening
+exists\mtilde\cite{jones2011class}, but only for quantitative levels,
+which can be the case for processor frequency.
+* DoE-based Methodology to Find Time-Energy Trade-offs
+\label{sec:methodology}
+
+The objective of our DoE-based methodology is to find all interesting
+Pareto front cases where the energy-performance correlation balances
+towards HPC goals, which is minimal performance losses.
+Figure\mtilde\ref{fig:the_methodology} gives an overview of the
+methodology, which is detailed in the next subsections.
+It starts with the screening phase (on the left), where
+initial parallel code regions (from A to F) have their impact on the
+outcome quickly measured. Results are evaluated with a combination of
+ANOVA and main effects analysis, both provided by most statistical
+tools. The objective is to detect which code regions significantly
+affect the outcome. Those which do (B, E, and F in the example) are
+used in the full factorial phase (right).  There, all time-energy
+trade-offs are discovered using full factorial designs, allowing the
+detection of interactions among code regions. We employ Pareto and
+ANOVA to analyze full factorial results.
+
+#+BEGIN_LaTeX
+\begin{figure}[tb]
+\centering
+\includegraphics[width=.85\linewidth]{three_phases}\\%
+\vspace{\baselineskip}
+\caption{Our DoE-based methodology to find all time-energy trade-offs.}
+\label{fig:the_methodology}
+\end{figure}
+#+END_LaTeX
+
+** Screening Parallel Code Regions, ANOVA and Main Effects Plot
+
+The screening experimental phase uses a two-level Plackett-Burman
+design, attempting to identify parallel code regions that affect
+energy consumption and execution time.  For simplicity, the parallel
+code regions comprise OpenMP's parallel code blocks.  These code
+regions are the *factors*, while the *levels* are the possible
+frequencies. The screening phase uses only two frequencies -- low and
+high -- out of those available in current processors. It is up to the
+performance analyst to define values to be considered as low and high frequencies.
+
+Analysis of variance (ANOVA) and main effects
+plots\mtilde\cite{montgomery2008design} are used to analyze
+measurements. While ANOVA gives a confidence level of
+which code regions affect the outcome when the frequency changes, it
+does not tell the magnitude or direction of such change. Main effects
+plots are complementary because they cover exactly these points,
+allowing us to rank regions based on how much they affect the outcome
+when the processor frequency is changed.  For the second phase we select
+only regions that are significant according to ANOVA and whose
+effect is significant compared to the effect of other code regions.
+
+** Full Factorial Design, ANOVA and Pareto Analysis
+This phase considers only regions that truly affect the outcome,
+according to screening.  The
+objective is to search for parallel code regions for which the
+processor frequency could be reduced without too much performance
+penalty; or regions whose execution time is not too
+negatively affected while offering high energy
+savings. We also look for parallel code region interactions when
+scaling frequency. Measurement variability is addressed through
+experimental replication, obtaining significance levels through ANOVA.
+
+Results of this final phase are analyzed through ANOVA tests and
+Pareto plots. They are complementary because ANOVA tests enable a
+quick verification of effect interactions among parallel code regions.
+Average energy consumption and execution time are represented using
+customized Pareto plots, where each point is the result of
+a frequency combination for code regions.
+Confidence
+regions\mtilde\cite{Johnson:1988:AMS:59551} in the time-energy space 
+are shown around average points, quantifying experimental
+variability. We also define the Pareto
+front\mtilde\cite{Ehrgott2000} by connecting the best time-energy
+trade-offs (see Figs.\mtilde\ref{fig:graph500_pareto} and\mtilde\ref{fig:global_pareto}).
+* Experimental Evaluation
+\label{sec:evaluation}
+
+We evaluate seven OpenMP-based benchmarks using our DoE
+methodology. Energy consumption is measured for the whole execution
+time, while we use DVFS\mtilde\cite{hsu2005feasibility} to control
+processor frequency.
+Parallel code regions (*factors*), identified through
+letters, are marked manually for
+evaluation. This process could be automated during compilation,
+for instance by defining a new region for each parallel task or loop.
+Our experiments use one node, although the methodology could be
+extended for use in a heterogeneous cluster. In that case, different
+regions could be used to differentiate between CPU and accelerator
+code for the same task.
+For each code region, we verify how the low and
+high frequency (*levels*) affect two outcomes: energy
+consumption and execution time.
+We present our benchmarks and the
+experimental platform below; a full analysis of Graph500; and global
+results of the six remaining benchmarks.
+
+\noindent
+\textbf{Case studies:}
+Table\mtilde\ref{table.hpc_bench_confs} lists the OpenMP benchmarks
+with the number of regions, and the low and
+high processor frequency for each of them. BFS and Delaunay
+belong to PBBS\mtilde\cite{Shun:2012:BAP:2312005.2312018}, while the
+Graph500\mtilde\cite{murphy2010introducing} is a benchmark on its
+own. MiniFE, HPCCG, CoMD, and Pathfinder
+are part of the Mantevo\mtilde\cite{heroux2009improving} suite.
+
+
+#+BEGIN_LaTeX
+\begin{table}[tb]
+\centering
+\caption{HPC Benchmarks description with low/high frequency parameters in GHz.}
+\label{table.hpc_bench_confs}
+\vspace{-\baselineskip}
+\begin{tabularx}{\textwidth}{lXlll}\toprule
+{\bf Benchmark}&{\bf Description} &{\bf Regions}&{\bf Low}&{\bf High}\\\toprule
+BFS\mtilde\cite{Shun:2012:BAP:2312005.2312018}
+               & breadth-first search               &           7   &    1.5 & 2.3 \\
+
+Delaunay\mtilde\cite{Shun:2012:BAP:2312005.2312018}
+               & triangular mesh generation         &         16     &   1.5 & 2.3 \\
+
+Graph500\mtilde\cite{murphy2010introducing}
+               & data-intensive load                &         17   &     1.8 & 2.3 \\
+
+MiniFE\mtilde\cite{heroux2009improving}
+         &  unstructured finite element    &         25   &     1.5 & 2.3 \\
+
+HPCCG\mtilde\cite{heroux2009improving}
+          &  synthetic linear system                &          7   &     1.5 & 2.3 \\
+
+CoMD\mtilde\cite{heroux2009improving}
+           & molecular dynamics                     &         14   &     1.5 & 2.3 \\
+
+Pathfinder\mtilde\cite{heroux2009improving}
+     &   signature search                           &          7   &     1.2 & 2.3 \\
+
+\bottomrule
+\end{tabularx}
+\vspace{-\baselineskip}
+\end{table}
+#+END_LaTeX
+
+\noindent
+\textbf{Experimental Platform:} Experiments are executed
+on =orion=, a machine of the GPPD Team of
+INF/UFRGS. This machine has two Intel Xeon E5-2630 Sandy Bridge
+processors, with 24 cores (12 physical),
+with 32GB of memory.  The processor has twelve
+clock frequencies, from 1.2 to 2.3 GHz.  Benchmarks are compiled
+with GCC 5.1.1, using the -O3 optimization flag.  Energy consumption
+of the package and memory are measured through Intel's RAPL
+counters\mtilde\cite{intel2013}.
+
+** Full Analysis of Graph500 Benchmark
+\label{sec:evaluation_q1}
+
+Seventeen parallel code regions (from A to Q) of the Graph500
+benchmark have been manually instrumented.
+Table\mtilde\ref{tab:graph500_anova} shows the ANOVA results of each
+factor's impact on energy (left) and time (right).
+The number of stars on each line's end indicates the significance of
+each factor's impact.
+For example, the three stars of region E indicates that a low to high
+frequency change has a 99.9% chance of impacting both
+energy and execution time.
+Therefore, scaling frequency on regions E, I,
+J, L and Q affects energy consumption, while on regions E, I, J and Q
+the impact is on the execution time.
+Figure\mtilde\ref{fig:graph500_meplots} is the main effect plots for
+energy (top) and execution time (bottom). It shows the magnitude of
+the effect when one factor changes its level from low to high.
+For
+example, region J increases energy consumption when it goes from low
+to high, while reducing execution time. We conclude
+that regions J, L and E have a non-negligible impact on energy when we
+upscale the processor frequency.  Remaining regions could be kept in
+the highest processor frequency since downscaling has no 
+effect on energy. We observe that regions I, J and E have
+smaller execution time when upscaling frequency. Remaining regions
+make no significant difference on execution time.  A promising code
+region to act upon is I, where we can see in the main effects plot
+that a significative execution time reduction appears with a minor
+energy consumption increase when upscaling, compared to the
+rest.
+Regions E, I, J, L, and Q are the only regions whose scaling affects
+energy consumption or execution time, with 95% confidence (one star). These
+regions were selected for the full factorial phase.
+
+#+begin_src R :results output :session :exports none
+summary(aov(data=graph500Screening, energy ~ A+B+C+D+E+F+G+H+I+J+K+L+M+N+O+P+Q));
+#+end_src
+
+#+RESULTS:
+#+begin_example
+            Df  Sum Sq Mean Sq F value   Pr(>F)    
+A            1     115     115   0.008   0.9280    
+B            1    5617    5617   0.401   0.5283    
+C            1   16437   16437   1.174   0.2818    
+D            1    2247    2247   0.160   0.6898    
+E            1  237947  237947  16.991 8.94e-05 ***
+F            1   19742   19742   1.410   0.2385    
+G            1    7083    7083   0.506   0.4790    
+H            1    7466    7466   0.533   0.4674    
+I            1   76297   76297   5.448   0.0220 *  
+J            1 1464976 1464976 104.608 2.65e-16 ***
+K            1    2759    2759   0.197   0.6583    
+L            1  605970  605970  43.270 4.17e-09 ***
+M            1   33466   33466   2.390   0.1260    
+N            1   47191   47191   3.370   0.0700 .  
+O            1   10017   10017   0.715   0.4002    
+P            1   21971   21971   1.569   0.2139    
+Q            1   62503   62503   4.463   0.0377 *  
+Residuals   82 1148361   14004                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#+end_example
+
+
+#+begin_src R :results output :session :exports none
+summary(aov(data=graph500Screening, time ~ A+B+C+D+E+F+G+H+I+J+K+L+M+N+O+P+Q));
+#+end_src
+
+#+RESULTS:
+#+begin_example
+            Df Sum Sq Mean Sq F value   Pr(>F)    
+A            1   1.23    1.23   0.622   0.4326    
+B            1   2.15    2.15   1.087   0.3003    
+C            1   4.14    4.14   2.088   0.1523    
+D            1   0.26    0.26   0.129   0.7199    
+E            1  44.21   44.21  22.304 9.49e-06 ***
+F            1   1.49    1.49   0.750   0.3891    
+G            1   1.87    1.87   0.944   0.3340    
+H            1   0.58    0.58   0.292   0.5902    
+I            1 274.03  274.03 138.262  < 2e-16 ***
+J            1 109.77  109.77  55.383 8.80e-11 ***
+K            1   0.65    0.65   0.329   0.5681    
+L            1   5.70    5.70   2.876   0.0937 .  
+M            1   3.19    3.19   1.609   0.2082    
+N            1   1.01    1.01   0.507   0.4783    
+O            1   2.69    2.69   1.359   0.2471    
+P            1   2.05    2.05   1.037   0.3116    
+Q            1  10.68   10.68   5.388   0.0228 *  
+Residuals   82 162.52    1.98                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#+end_example
+
+#+BEGIN_LaTeX
+\begin{table}[tb]
+\centering
+\caption{ANOVA of energy (left) and execution time (right) of Graph500 screening.}
+\label{tab:graph500_anova}
+\vspace{-\baselineskip}
+\begin{tabular}{p{.49\linewidth}|p{.49\linewidth}}\toprule
+\noindent
+\begin{minipage}{\linewidth}
+\prettysmallbis\begin{verbatim}
+     Sum Sq Sq F value   Pr(>F)    
+A      115   0.008   0.9280    
+B     5617   0.401   0.5283    
+C    16437   1.174   0.2818    
+D     2247   0.160   0.6898    
+E   237947  16.991 8.94e-05 ***
+F    19742   1.410   0.2385    
+G     7083   0.506   0.4790    
+H     7466   0.533   0.4674    
+I    76297   5.448   0.0220 *  
+J  1464976 104.608 2.65e-16 ***
+K     2759   0.197   0.6583    
+L   605970  43.270 4.17e-09 ***
+M    33466   2.390   0.1260    
+N    47191   3.370   0.0700 .  
+O    10017   0.715   0.4002    
+P    21971   1.569   0.2139    
+Q    62503   4.463   0.0377 *  
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{\linewidth}
+\prettysmallbis\begin{verbatim}
+     Sum Sq F value   Pr(>F)    
+A     1.23    0.622   0.4326    
+B     2.15    1.087   0.3003    
+C     4.14    2.088   0.1523    
+D     0.26    0.129   0.7199    
+E    44.21   22.304 9.49e-06 ***
+F     1.49    0.750   0.3891    
+G     1.87    0.944   0.3340    
+H     0.58    0.292   0.5902    
+I   274.03  138.262  < 2e-16 ***
+J   109.77   55.383 8.80e-11 ***
+K     0.65    0.329   0.5681    
+L     5.70    2.876   0.0937 .  
+M     3.19    1.609   0.2082    
+N     1.01    0.507   0.4783    
+O     2.69    1.359   0.2471    
+P     2.05    1.037   0.3116    
+Q    10.68    5.388   0.0228 *  
+\end{verbatim}
+\end{minipage}\\\bottomrule
+\end{tabular}
+\end{table}
+#+END_LaTeX
+
+#+BEGIN_LaTeX
+\begin{figure}[tb]
+\centering
+\includegraphics[width=\linewidth]{graph500_me_energy-crop.pdf}\\
+\includegraphics[width=\linewidth]{graph500_me_time-crop.pdf}
+\vspace{-\baselineskip}
+\caption{Main effect plots of energy (top) and exec. time (bottom) of Graph500 screening.}
+\label{fig:graph500_meplots}
+\end{figure}
+#+END_LaTeX
+
+Table\mtilde\ref{tab:graph500_anova_full} shows the ANOVA for the full
+factorial experiments. The minimal model $E+I+J+L*Q$ for both energy
+and time has been used to correlate results. Region Q has no impact in
+runtime and energy, in low or high frequency.
+Regions E, I, J, and L should be kept
+in high frequency since they affect execution time, with the expense
+of also affecting energy consumption. ANOVA also indicates an
+interaction (with 90% of chance for energy, and 95% for time) between
+regions L and Q.
+This indicates that the frequency choice for both regions should be done
+together, keeping both at the same frequency.
+
+#+begin_src R :results output :session :exports none
+summary(aov(data=get_experiments('data/graph500-full.csv'), energy ~ E+I+J+L*Q));
+#+end_src
+
+#+RESULTS:
+#+begin_example
+             Df   Sum Sq Mean Sq F value Pr(>F)    
+E             1  1361120 1361120  71.871 <2e-16 ***
+I             1    98609   98609   5.207 0.0228 *  
+J             1  4971231 4971231 262.494 <2e-16 ***
+L             1  3017594 3017594 159.337 <2e-16 ***
+Q             1      183     183   0.010 0.9217    
+L:Q           1    68793   68793   3.632 0.0571 .  
+Residuals   633 11988059   18938                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#+end_example
+
+#+begin_src R :results output :session :exports none
+summary(aov(data=get_experiments('data/graph500-full.csv'), time ~ E+I+J+L*Q));
+#+end_src
+
+#+RESULTS:
+#+begin_example
+             Df Sum Sq Mean Sq F value   Pr(>F)    
+E             1   36.2    36.2  12.091 0.000541 ***
+I             1  665.0   665.0 222.344  < 2e-16 ***
+J             1  199.6   199.6  66.748 1.68e-15 ***
+L             1   41.5    41.5  13.871 0.000213 ***
+Q             1    0.1     0.1   0.018 0.893777    
+L:Q           1   18.5    18.5   6.174 0.013221 *  
+Residuals   633 1893.2     3.0                     
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#+end_example
+
+#+BEGIN_LaTeX
+\begin{table}[tb]
+\centering
+\caption{ANOVA of energy (left) and time (right) of Graph500 full factorial experiments.}
+\label{tab:graph500_anova_full}
+\vspace{-\baselineskip}
+\begin{tabular}{p{.49\linewidth}|p{.49\linewidth}}\toprule
+\noindent
+%{\bf Energy} & {\bf Time} \\\toprule
+\begin{minipage}{\linewidth}
+\prettysmallbis\begin{verbatim}
+      Sum Sq  F value Pr(>F)    
+E    1361120   71.871 <2e-16 ***
+I      98609    5.207 0.0228 *  
+J    4971231  262.494 <2e-16 ***
+L    3017594  159.337 <2e-16 ***
+Q        183    0.010 0.9217    
+L:Q    68793    3.632 0.0571 .  
+\end{verbatim}
+\end{minipage}
+&
+\begin{minipage}{\linewidth}
+\prettysmallbis\begin{verbatim}
+     Sum Sq F value   Pr(>F)    
+E      36.2   12.091 0.000541 ***
+I     665.0  222.344  < 2e-16 ***
+J     199.6   66.748 1.68e-15 ***
+L      41.5   13.871 0.000213 ***
+Q       0.1    0.018 0.893777    
+L:Q    18.5    6.174 0.013221 *  
+\end{verbatim}
+\end{minipage}\\\bottomrule
+\end{tabular}
+\end{table}
+#+END_LaTeX
+
+Figure\mtilde\ref{fig:graph500_pareto} presents Pareto plots showing
+the correlation between energy savings (in the Y axis) and execution
+time (in X).
+The blue line represents the Pareto front, connecting the
+best time-energy trade-offs. Each point is the average of 50
+executions. An ellipse around each point represent the confidence
+region in the bivariate space according to a 95% confidence level. The
+\textsc{HIGH} and \textsc{LOW} labels indicate points where all regions are in
+the high and low frequency. Pareto points are labeled with the
+corresponding high (+) and low (-) frequency configuration for the E,
+I, J, L and Q parallel regions, in that order.
+
+#+BEGIN_LaTeX
+\begin{figure}[tb]
+\centering
+\includegraphics[width=.48\linewidth]{graph500-pareto-zoom-crop}
+\caption{Time-Energy Pareto plot containing the results for the Graph500 benchmark.}
+\label{fig:graph500_pareto}
+\end{figure}
+#+END_LaTeX
+
+The Pareto front is composed of seven points: \textsc{LOW},
+\textsc{HIGH}, and five
+region-based trade-offs. Table\mtilde\ref{tab:graph500_results} details 
+the region-based points against \textsc{HIGH} (at the left)
+and \textsc{LOW} (right).  Most of the region-based points in the
+Pareto front, when compared to HIGH, offer more energy reduction than
+performance loss. The only exception is the configuration
+~++-++~ whose execution time loss against \textsc{HIGH}
+is larger than gains in energy consumption. Comparing to \textsc{LOW},
+the more interesting result comes from configuration
+~-+--+~: so setting only regions I and Q to the high
+frequency gives an execution time reduction of 5.59% with
+non-significant difference in energy consumption.
+Remaining comparison against \textsc{LOW}
+shows that runtime gains are always greater than the
+increase in energy.
+Next section shows the Pareto front results of six other benchmarks.
+
+# Pareto points:
+# +++−−
+# ++−++
+# −++−−
+# ++−−−
+# −+−−+
+
+#+begin_src R :results output :session :exports none
+# reference is HIGH and LOW on Full
+k <- ddply(graph500Full, .(E,I,J,L,Q), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
+HIGHtime <-   k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1 & k$Q == 1,]$avgtime;
+HIGHenergy <- k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1 & k$Q == 1,]$avgenergy;
+LOWtime <-   k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1 & k$Q == -1,]$avgtime;
+LOWenergy <- k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1 & k$Q == -1,]$avgenergy;
+print(paste("Number of experiments:",k$n[1]));
+# summarize data frame
+g <- ddply(graph500Full, .(E,I,J,L,Q), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
+g <- g[ # select points belonging to pareto (got from plot)
+     (g$E ==  1 & g$I ==  1 & g$J ==  1 & g$L == -1 & g$Q == -1) | # +++--
+     (g$E ==  1 & g$I ==  1 & g$J == -1 & g$L ==  1 & g$Q ==  1) | # ++-++
+     (g$E == -1 & g$I ==  1 & g$J ==  1 & g$L == -1 & g$Q == -1) | # -++--
+     (g$E ==  1 & g$I ==  1 & g$J == -1 & g$L == -1 & g$Q == -1) | # ++---
+     (g$E == -1 & g$I ==  1 & g$J == -1 & g$L == -1 & g$Q ==  1),] # −+−−+
+m <- ddply(g, .(E,I,J,L,Q), summarize,
+      HRT=round((avgtime-HIGHtime)/HIGHtime*100,2),
+      HRE=round((avgenergy-HIGHenergy)/HIGHenergy*100,2),
+      LRT=round((avgtime-LOWtime)/LOWtime*100,2),
+      LRE=round((avgenergy-LOWenergy)/LOWenergy*100,2));
+m$DT <- NULL;
+m$DE <- NULL;
+m
+#+end_src
+
+#+RESULTS:
+: [1] "Number of experiments: 46"
+:    E I  J  L  Q  HRT   HRE   LRT  LRE
+: 1 -1 1 -1 -1  1 6.82 -9.19 -5.59 0.12
+: 2 -1 1  1 -1 -1 4.20 -4.66 -7.91 5.11
+: 3  1 1 -1 -1 -1 5.80 -6.16 -6.50 3.46
+: 4  1 1 -1  1  1 3.80 -3.63 -8.26 6.25
+: 5  1 1  1 -1 -1 2.31 -2.55 -9.57 7.44
+
+#+BEGIN_LaTeX
+\begin{table}[tb]
+\centering
+\caption{Pareto front points and their performance/energy trade-offs for Graph500.}
+\label{tab:graph500_results}
+\vspace{-\baselineskip}
+\begin{tabularx}{\textwidth}{cXccXcc}\toprule
+\texttt{\textbf{E I J L Q}} &\ & {\bf Time (\%{\scriptsize /High})} & {\bf Energy (\%{\scriptsize /High})} &\ & {\bf Time (\%{\scriptsize /Low})} & {\bf Energy (\%{\scriptsize /Low})} \\\toprule
+
+\texttt{- + - - +} && 6.82& -9.19&& -5.59& 0.12\\
+\texttt{+ + - - -} && 5.80& -6.16&& -6.50& 3.46\\
+\texttt{- + + - -} && 4.20& -4.66&& -7.91& 5.11\\
+\texttt{+ + - + +} && 3.80& -3.63&& -8.26& 6.25\\
+\texttt{+ + + - -} && 2.31& -2.55&& -9.57& 7.44
+
+\\\bottomrule
+\end{tabularx}
+\end{table}
+#+END_LaTeX
+** Global Results considering remaining benchmarks
+\label{sec:evaluation_q2}
+
+Figure\mtilde\ref{fig:global_pareto} depicts the detailed Pareto plots
+for the other benchmarks. Each one shows distinct trade-offs, detailed
+as follows.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf BFS}. The Pareto front is composed of two region-based
+points: ~-++~ and ~+--~. Remaining region-based
+points and HIGH and LOW get grouped around these two points, with no
+significant difference. As we can see, our methodology fails to detect
+important trade-offs between energy and execution time for this
+benchmark. It discovers, however, an anomaly with the two points that
+are above the LOW group but far from the Pareto front. Such anomaly,
+which should be avoided, provides no performance gains and higher
+energy cost.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf Delaunay}.  Only two parallel regions were considered
+relevant for the full factorial.  Results are similar to BFS: the two
+region-based points are very similar to the LOW and HIGH points,
+considering experimental variability. There is a significant different
+in energy consumption when moving from LOW to ~+-~.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf MiniFE}.  Five parallel regions were considered for
+MiniFE. As we can see in the Pareto plot, four groups of region-based
+points are formed: two of them around the LOW and HIGH points, and two
+that present other energy performance trade-offs. Combinations below
+the HIGH group have interesting results. The Pareto point
+~+-+++~, for instance, reduces energy by 9.27% with a
+minor penalty in execution time when compared to HIGH. Another
+region-based point with combination ~+++-+~ in the HIGH
+group provides a potential reduction both in time (1.64%) and in
+energy (1.63%), but results are unclear since there is some overlap
+with the HIGH point considering the confidence region. For this
+benchmark, fixing all regions in the lowest frequency would be
+insufficient to bring enough benefits in energy while causing a large
+slowdown. In this case, our methodology clearly captures the new
+trade-off.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf HPCCG}. The screening phase has detected only two parallel
+regions for this benchmark. Results show that the combination
+~-+~ offers an energy reduction of 21.35% with a
+non-significant execution time penalty of only 2.04% when compared to
+the HIGH point. The other region-based point ~+-~ demonstrates energy
+reduction of 4.21% with a 1.36% penalty in time, also
+non-significant.
+These values are based on 50 replications for each
+combination, indicating a small variability in energy but large in
+execution time probably due to the small timespan.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf CoMD}.  Experiments with CoMD with two parallel code
+regions showed a high variability after 50 replications. The energy
+scale is very small, indicating that any changes in frequency cause
+minor energy gains but large performance penalties. The
+region-based point ~+-~ offers 1.97% energy reduction
+causing 4.1% slowdown, when compared to HIGH. We can conclude that
+this benchmark is unsuited to energy gains with minor performance
+losses.
+#+BEGIN_LaTeX
+%
+#+END_LaTeX
+\texttt{\bf Pathfinder}.  Only one region has been selected for the
+full factorial tests probably indicating that such region is
+the benchmark's compute-bound. The HIGH point dominates the LOW point,
+forming a simple Pareto front. We can see that running the parallel
+code region in LOW frequency causes a 40% slowdown for the application
+with no significant gains in energy reduction.
+
+#+BEGIN_LaTeX
+\begin{figure}[tb]
+\centering
+\def\tabularxcolumn#1{m{#1}}
+\begin{tabulary}{\textwidth}{CCC}
+{\scriptsize BFS} & {\scriptsize Delaunay} & {\scriptsize MiniFE} \\
+\includegraphics[width=\linewidth]{img/bfs-pareto-zoom-crop} &
+\includegraphics[width=\linewidth]{img/delaunay-pareto-zoom-crop}  &
+\includegraphics[width=\linewidth]{img/minifeopt-pareto-zoom-crop} \\
+
+{\scriptsize HPCCG} & {\scriptsize CoMD} & {\scriptsize Pathfinder} \\
+\includegraphics[width=\linewidth]{img/hpccg-pareto-zoom-crop} &
+\includegraphics[width=\linewidth]{img/comd-pareto-zoom-crop} &
+\includegraphics[width=\linewidth]{img/pathfinder-pareto-zoom-crop} \\
+\end{tabulary}
+\vspace{-\baselineskip}
+\caption{Detailed Pareto plots for six benchmarks.}
+\label{fig:global_pareto}
+\end{figure}
+#+END_LaTeX
+** Code for obtaining the numbers given in this section           :noexport:
+comd
+#+begin_src R :results output :session :exports none
+d <- comdFull
+sel <- .(L,N);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$L==1 & g$N==-1,];
+high <- g[g$L==1 & g$N== 1,];
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy);
+names(r) = c('time','energy');
+r;
+#+end_src
+
+#+RESULTS:
+:        time      energy 
+:  0.04097407 -0.01972219
+
+graph500
+#+begin_src R :results output :session :exports none
+d <- graph500Full
+sel <- .(E,I,J,L,Q);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$E==-1 & g$I== 1 & g$J==-1 & g$L==-1 & g$Q== 1,]
+low  <- g[g$E==-1 & g$I==-1 & g$J==-1 & g$L==-1 & g$Q==-1,]
+
+r <- c(
+    (best$avgtime   - low$avgtime  ) / low$avgtime,
+    (best$avgenergy - low$avgenergy) / low$avgenergy)
+names(r) = c('time','energy')
+r;
+#+end_src
+
+#+RESULTS:
+:         time       energy 
+: -0.055873684  0.001238474
+
+hpccg
+#+begin_src R :results output :session :exports none
+d <- hpccgFull
+sel <- .(B,E);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$B==-1 & g$E== 1,]
+high <- g[g$B== 1 & g$E== 1,]
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy)
+names(r) = c('time','energy')
+r;
+#+end_src
+
+#+RESULTS:
+:        time      energy 
+:  0.02042877 -0.21350982
+
+
+hpccg
+#+begin_src R :results output :session :exports none
+d <- hpccgFull
+sel <- .(B,E);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$B== 1 & g$E==-1,]
+low  <- g[g$B== 1 & g$E== 1,]
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy)
+names(r) = c('time','energy')
+r;
+#+end_src
+
+#+RESULTS:
+:        time      energy 
+:  0.01359698 -0.04210339
+
+minife
+#+begin_src R :results output :session :exports none
+d <- minifeoptFull
+sel <- .(D,F,K,T,Y);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$D== 1 & g$F==-1 & g$K== 1 & g$T == 1 & g$Y == 1,]
+high <- g[g$D== 1 & g$F== 1 & g$K== 1 & g$T == 1 & g$Y == 1,]
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy);
+names(r) = c('time','energy');
+r;
+#+end_src
+
+#+RESULTS:
+:        time      energy 
+:  0.01555355 -0.09268393
+
+minife
+#+begin_src R :results output :session :exports none
+d <- minifeoptFull
+sel <- .(D,F,K,T,Y);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$D==1 & g$F== 1 & g$K==1 & g$T ==-1 & g$Y == 1,]
+high <- g[g$D==1 & g$F== 1 & g$K==1 & g$T == 1 & g$Y == 1,]
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy);
+names(r) = c('time','energy');
+r;
+#+end_src
+
+#+RESULTS:
+:        time      energy 
+: -0.01640003 -0.01630624
+
+pathfinder
+#+begin_src R :results output :session :exports none
+d <- pathfinderFull
+sel <- .(F);
+g <- ddply(d, sel, summarize, n=length(time),
+     avgtime=mean(time), avgenergy=mean(energy));
+best <- g[g$F==-1,];
+high <- g[g$F== 1,];
+
+r <- c(
+    (best$avgtime   - high$avgtime  ) / high$avgtime,
+    (best$avgenergy - high$avgenergy) / high$avgenergy);
+names(r) = c('time','energy');
+r;
+#+end_src
+
+#+RESULTS:
+:       time     energy 
+: 0.39445055 0.04715115
+
+** Pareto Plots                                                   :noexport:
+**** bfs
+
+#+begin_src R :results output graphics :file img/bfs-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = bfsFull;
+highl = "+++";
+lowl = "---";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),];
+hll = hll[!hll$label %in% c('HIGH','LOW'),];
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(2, 'lines'),
+    point.padding = unit(0.6, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3,
+    nudge_x = .2,
+    nudge_y = 5) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(2.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3,
+    nudge_y = -8
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/bfs-pareto-zoom.pdf]]
+
+**** delaunay
+
+#+begin_src R :results output graphics :file img/delaunay-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = delaunayFull;
+highl = "++";
+lowl  = "--";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),];
+hll = hll[!hll$label %in% c('HIGH','LOW'),];
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(2, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/delaunay-pareto-zoom.pdf]]
+
+**** graph500
+
+#+begin_src R :results output graphics :file img/graph500-pareto-zoom.pdf :exports both :width 8 :height 6 :session
+dados = graph500Full;
+highl = "+++++";
+lowl  = "-----";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),]
+hll = hll[!hll$label %in% c('HIGH','LOW'),]
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  labs(colour='Per-Region\nFrequency\nConfiguration',
+         fill='Per-Region\nFrequency\nConfiguration') +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+#  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 4.4,
+    max.iter = 2e1,
+    nudge_x = -1, nudge_y = -30) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/graph500-pareto-zoom.pdf]]
+
+**** minifeopt
+
+#+begin_src R :results output graphics :file img/minifeopt-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = minifeoptFull;
+highl = "+++++";
+lowl  = "-----";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),];
+hll = hll[!hll$label %in% c('HIGH','LOW'),];
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = .1,
+    max.iter = 2e4,
+    nudge_x = 2.7,
+    nudge_y = 60) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/minifeopt-pareto-zoom.pdf]]
+
+**** comd
+
+#+begin_src R :results output graphics :file img/comd-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = comdFull;
+highl = "++";
+lowl  = "--";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),];
+hll = hll[!hll$label %in% c('HIGH','LOW'),];
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3,
+    nudge_x = -1.1) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/comd-pareto-zoom.pdf]]
+
+**** hpccg
+
+#+begin_src R :results output graphics :file img/hpccg-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = hpccgFull;
+highl = "++";
+lowl  = "--";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+hl = hll[hll$label %in% c('HIGH','LOW'),];
+hll = hll[!hll$label %in% c('HIGH','LOW'),];
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 7,
+    fontface = 'bold',
+    box.padding = unit(3, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3) +
+  geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(1.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3,
+    nudge_x = .05
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/hpccg-pareto-zoom.pdf]]
+
+**** pathfinder
+
+#+begin_src R :results output graphics :file img/pathfinder-pareto-zoom.pdf :exports both :width 6 :height 6 :session
+dados = pathfinderFull;
+highl = "+++++++";
+lowl  = "-------";
+
+dfp <- get_pareto (dados, highl, lowl);
+ddf <- my_mean (dados);
+hll <- high_low_labels (ddf, highl, lowl);
+hll <- rbind(dfp, hll);
+
+p <- ggplot()  +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
+  geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  theme(legend.background=element_blank()) +
+  xlab('Time (s)') + ylab('Energy (J)') +
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
+  theme(panel.grid=element_blank()) +
+  theme(legend.position='none') +
+  geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
+    size = 5,
+    fontface = 'bold',
+    box.padding = unit(2.5, 'lines'),
+    point.padding = unit(0.5, 'lines'),
+    segment.color = '#555555',
+    segment.size = 0.8,
+    arrow = arrow(length = unit(0.01, 'npc')),
+    force = 2,
+    max.iter = 2e3,
+    nudge_x = 2,
+    nudge_y = 6
+);
+p
+#+end_src
+
+#+RESULTS:
+[[file:img/pathfinder-pareto-zoom.pdf]]
+* Conclusion
+\label{sec:conclusion}
+
+We propose a workflow based on Design of Experiments to evaluate
+the time-energy trade-offs when per-region
+frequency scaling is adopted in HPC applications.
+Our approach consists of two phases: a screening phase using ANOVA and
+main effects plots to identify which regions deserve further
+investigation; and a detailed phase using full
+factorial designs along with ANOVA and Pareto plots for
+measurement analysis.
+We evaluated our strategy with seven OpenMP benchmarks: BFS, Delaunay,
+Graph500, MiniFE, HPCCG, CoMD and Pathfinder. Our DoE-based
+methodology enables the discovery of different time-energy
+trade-offs: for MiniFE, we have found region-based frequency
+configurations that enable a 9.27% improvement in energy with no
+significant change in runtime; and for Graph500, a time reduction of
+5.59% with no significant change in energy consumption, when
+compared with using the lowest frequency for all regions.
+In the other benchmarks, per-region frequency scaling resulted in
+little to no energy improvements when compared against using only
+one frequency for all regions.
+Another interesting result is that measurement variability
+makes the limits of the Pareto front unclear. Distinct Pareto front shape
+might help better understand the impact of region-based
+frequency scaling for each HPC application.
+Planned future work includes a full factorial analysis
+when all
+processor frequencies are considered. We also plan to 
+improve the interpretation of the screening by including the time taken to
+execute each parallel code region.
+
+#+LATEX:\section*{Acknowledgements}
+#+LATEX:\vspace{-\baselineskip}
+We would like to thanks CAPES and CNPq for partially funding this
+work. We would also like to thanks Arnaud Legrand for his ideas on
+design of experiments that inspired us to develop the work of this
+paper, and also for his series of lectures on Scientific Methodology
+and Performance Evaluation (SMPE).
+
+#+LATEX: \bibliographystyle{splncs03}
+#+LATEX: \bibliography{reppar2016}

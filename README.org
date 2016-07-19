@@ -1,0 +1,8 @@
+Title: Computation-Aware Dynamic Frequency Scaling: Parsimonious Evaluation of the Time-Energy Trade-off Using Design of Experiments
+
+Authors: Luis Felipe Millani, Lucas Mello Schnorr
+
+[[http://reppar.org][International Workshop on Reproducibility in Parallel Computing (REPPAR) 2016]]
+
+Instructions for generating the figures and the pdf are in the file
+=reppar.org=. All data is in the csv format in the directory data.

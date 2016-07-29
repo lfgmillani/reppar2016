@@ -3311,6 +3311,21 @@ remove_outliers = function(d,n,bycol){
   return(d)
 }
 
+remove_outliers2=function(d, bycol, percent){
+# removes the slowest executions
+  if(missing(bycol))
+    bycol = 'st'
+  if(missing(percent))
+    percent = .95
+  e = NULL
+  for(x in unique(d[[bycol]])){
+    f = d[d[[bycol]]==x,]
+    q = quantile(f$time, percent)
+    e = rbind(e, f[f$time < q[1],])
+  }
+  return(e)
+}
+
 get_experiments = function(inputFiles){
 # reads experimental results from a list of files
 # each file is considered to be from a different input

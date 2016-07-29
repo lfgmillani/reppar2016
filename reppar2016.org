@@ -67,7 +67,7 @@ out of the 25 parallel regions of the MiniFE benchmark, we detect
 configurations which reduce energy in 9.27% with a non-significant
 penalty in runtime when compared with using the high frequency for all
 regions; and, for the Graph500 benchmark with 17 parallel regions,
-5.59% execution time reduction with a non-significant increase in
+7.0% execution time reduction with a increase of 2.4% in
 energy consumption, when comparing against running all regions in the
 lowest frequency.
 
@@ -3670,8 +3670,8 @@ distinct shapes.  Among them, out of the 25 parallel regions of the
 MiniFE benchmark, we detect configurations which reduce energy in
 9.27% with a non-significant penalty in runtime when compared with
 using the high frequency for all regions; and, for the Graph500
-benchmark with 17 parallel regions, we spot a 5.59% execution time reduction
-with a non-significant increase in energy consumption, when comparing
+benchmark with 17 parallel regions, we obtain a 7% execution time reduction
+with a 2.4% increase in energy consumption, when comparing
 against running all regions in the lowest frequency.
 
 Section\mtilde\ref{sec:relatedwork} positions our work against related
@@ -3988,12 +3988,11 @@ Table\mtilde\ref{tab:graph500_anova} shows the ANOVA results of each
 factor's impact on energy (left) and time (right).
 The number of stars on each line's end indicates the significance of
 each factor's impact.
-For example, the three stars of region E indicates that a low to high
+For example, the three stars of region J indicates that a low to high
 frequency change has a 99.9% chance of impacting both
 energy and execution time.
-Therefore, scaling frequency on regions E, I,
-J, L and Q affects energy consumption, while on regions E, I, J and Q
-the impact is on the execution time.
+Therefore, scaling frequency on regions J and L has a 99.9% chance of affecting
+energy consumption, while on regions E, I and J the impact is on execution time.
 Figure\mtilde\ref{fig:graph500_meplots} is the main effect plots for
 energy (top) and execution time (bottom). It shows the magnitude of
 the effect when one factor changes its level from low to high.
@@ -4005,13 +4004,13 @@ upscale the processor frequency.  Remaining regions could be kept in
 the highest processor frequency since downscaling has no 
 effect on energy. We observe that regions I, J and E have
 smaller execution time when upscaling frequency. Remaining regions
-make no significant difference on execution time.  A promising code
+make no significant difference on execution time, at a 99% confidence level.  A promising code
 region to act upon is I, where we can see in the main effects plot
 that a significative execution time reduction appears with a minor
 energy consumption increase when upscaling, compared to the
 rest.
-Regions E, I, J, L, and Q are the only regions whose scaling affects
-energy consumption or execution time, with 95% confidence (one star). These
+Regions E, I, J and L are the only regions whose scaling affects
+energy consumption or execution time, with a 99% confidence level (two stars). These
 regions were selected for the full factorial phase.
 
 #+begin_src R :results output :session :exports none
@@ -4021,24 +4020,24 @@ summary(aov(data=graph500Screening, energy ~ A+B+C+D+E+F+G+H+I+J+K+L+M+N+O+P+Q))
 #+RESULTS:
 #+begin_example
             Df  Sum Sq Mean Sq F value   Pr(>F)    
-A            1     115     115   0.008   0.9280    
-B            1    5617    5617   0.401   0.5283    
-C            1   16437   16437   1.174   0.2818    
-D            1    2247    2247   0.160   0.6898    
-E            1  237947  237947  16.991 8.94e-05 ***
-F            1   19742   19742   1.410   0.2385    
-G            1    7083    7083   0.506   0.4790    
-H            1    7466    7466   0.533   0.4674    
-I            1   76297   76297   5.448   0.0220 *  
-J            1 1464976 1464976 104.608 2.65e-16 ***
-K            1    2759    2759   0.197   0.6583    
-L            1  605970  605970  43.270 4.17e-09 ***
-M            1   33466   33466   2.390   0.1260    
-N            1   47191   47191   3.370   0.0700 .  
-O            1   10017   10017   0.715   0.4002    
-P            1   21971   21971   1.569   0.2139    
-Q            1   62503   62503   4.463   0.0377 *  
-Residuals   82 1148361   14004                     
+A            1   47202   47202   3.572 0.062298 .  
+B            1   25313   25313   1.916 0.170105    
+C            1    2197    2197   0.166 0.684514    
+D            1   21324   21324   1.614 0.207569    
+E            1  155973  155973  11.803 0.000931 ***
+F            1   10309   10309   0.780 0.379685    
+G            1      34      34   0.003 0.959820    
+H            1   14413   14413   1.091 0.299389    
+I            1   67315   67315   5.094 0.026669 *  
+J            1  543804  543804  41.152 8.52e-09 ***
+K            1    1088    1088   0.082 0.774852    
+L            1  237763  237763  17.992 5.79e-05 ***
+M            1    7698    7698   0.583 0.447497    
+N            1   13177   13177   0.997 0.320938    
+O            1   41888   41888   3.170 0.078716 .  
+P            1    4338    4338   0.328 0.568236    
+Q            1   24679   24679   1.868 0.175494    
+Residuals   82 1083603   13215                     
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #+end_example
@@ -4051,24 +4050,24 @@ summary(aov(data=graph500Screening, time ~ A+B+C+D+E+F+G+H+I+J+K+L+M+N+O+P+Q));
 #+RESULTS:
 #+begin_example
             Df Sum Sq Mean Sq F value   Pr(>F)    
-A            1   1.23    1.23   0.622   0.4326    
-B            1   2.15    2.15   1.087   0.3003    
-C            1   4.14    4.14   2.088   0.1523    
-D            1   0.26    0.26   0.129   0.7199    
-E            1  44.21   44.21  22.304 9.49e-06 ***
-F            1   1.49    1.49   0.750   0.3891    
-G            1   1.87    1.87   0.944   0.3340    
-H            1   0.58    0.58   0.292   0.5902    
-I            1 274.03  274.03 138.262  < 2e-16 ***
-J            1 109.77  109.77  55.383 8.80e-11 ***
-K            1   0.65    0.65   0.329   0.5681    
-L            1   5.70    5.70   2.876   0.0937 .  
-M            1   3.19    3.19   1.609   0.2082    
-N            1   1.01    1.01   0.507   0.4783    
-O            1   2.69    2.69   1.359   0.2471    
-P            1   2.05    2.05   1.037   0.3116    
-Q            1  10.68   10.68   5.388   0.0228 *  
-Residuals   82 162.52    1.98                     
+A            1   3.88    3.88   2.297  0.13348    
+B            1   6.78    6.78   4.009  0.04855 *  
+C            1   0.82    0.82   0.482  0.48947    
+D            1   4.04    4.04   2.386  0.12626    
+E            1  19.31   19.31  11.418  0.00112 ** 
+F            1   0.26    0.26   0.152  0.69771    
+G            1   0.12    0.12   0.071  0.79036    
+H            1   3.28    3.28   1.943  0.16715    
+I            1  79.27   79.27  46.879 1.27e-09 ***
+J            1  58.12   58.12  34.373 9.19e-08 ***
+K            1   3.35    3.35   1.980  0.16321    
+L            1   2.94    2.94   1.737  0.19115    
+M            1   0.52    0.52   0.308  0.58020    
+N            1   0.05    0.05   0.030  0.86216    
+O            1   0.37    0.37   0.219  0.64130    
+P            1   2.60    2.60   1.535  0.21892    
+Q            1   3.14    3.14   1.856  0.17681    
+Residuals   82 138.66    1.69                     
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 #+end_example
@@ -4083,47 +4082,47 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 \noindent
 \begin{minipage}{\linewidth}
 \prettysmallbis\begin{verbatim}
-     Sum Sq Sq F value   Pr(>F)    
-A      115   0.008   0.9280    
-B     5617   0.401   0.5283    
-C    16437   1.174   0.2818    
-D     2247   0.160   0.6898    
-E   237947  16.991 8.94e-05 ***
-F    19742   1.410   0.2385    
-G     7083   0.506   0.4790    
-H     7466   0.533   0.4674    
-I    76297   5.448   0.0220 *  
-J  1464976 104.608 2.65e-16 ***
-K     2759   0.197   0.6583    
-L   605970  43.270 4.17e-09 ***
-M    33466   2.390   0.1260    
-N    47191   3.370   0.0700 .  
-O    10017   0.715   0.4002    
-P    21971   1.569   0.2139    
-Q    62503   4.463   0.0377 *  
+   Sum Sq F value   Pr(>F)    
+A   47202   3.572 0.062298 .  
+B   25313   1.916 0.170105    
+C    2197   0.166 0.684514    
+D   21324   1.614 0.207569    
+E  155973  11.803 0.000931 ***
+F   10309   0.780 0.379685    
+G      34   0.003 0.959820    
+H   14413   1.091 0.299389    
+I   67315   5.094 0.026669 *  
+J  543804  41.152 8.52e-09 ***
+K    1088   0.082 0.774852    
+L  237763  17.992 5.79e-05 ***
+M    7698   0.583 0.447497    
+N   13177   0.997 0.320938    
+O   41888   3.170 0.078716 .  
+P    4338   0.328 0.568236    
+Q   24679   1.868 0.175494    
 \end{verbatim}
 \end{minipage}
 &
 \begin{minipage}{\linewidth}
-\prettysmallbis\begin{verbatim}
-     Sum Sq F value   Pr(>F)    
-A     1.23    0.622   0.4326    
-B     2.15    1.087   0.3003    
-C     4.14    2.088   0.1523    
-D     0.26    0.129   0.7199    
-E    44.21   22.304 9.49e-06 ***
-F     1.49    0.750   0.3891    
-G     1.87    0.944   0.3340    
-H     0.58    0.292   0.5902    
-I   274.03  138.262  < 2e-16 ***
-J   109.77   55.383 8.80e-11 ***
-K     0.65    0.329   0.5681    
-L     5.70    2.876   0.0937 .  
-M     3.19    1.609   0.2082    
-N     1.01    0.507   0.4783    
-O     2.69    1.359   0.2471    
-P     2.05    1.037   0.3116    
-Q    10.68    5.388   0.0228 *  
+\prettysmallbis\begin{verbatim}                                     
+  Sum Sq F value   Pr(>F)    
+A   3.88   2.297  0.13348    
+B   6.78   4.009  0.04855 *  
+C   0.82   0.482  0.48947    
+D   4.04   2.386  0.12626    
+E  19.31  11.418  0.00112 ** 
+F   0.26   0.152  0.69771    
+G   0.12   0.071  0.79036    
+H   3.28   1.943  0.16715    
+I  79.27  46.879 1.27e-09 ***
+J  58.12  34.373 9.19e-08 ***
+K   3.35   1.980  0.16321    
+L   2.94   1.737  0.19115    
+M   0.52   0.308  0.58020    
+N   0.05   0.030  0.86216    
+O   0.37   0.219  0.64130    
+P   2.60   1.535  0.21892    
+Q   3.14   1.856  0.17681    
 \end{verbatim}
 \end{minipage}\\\bottomrule
 \end{tabular}
@@ -4142,52 +4141,48 @@ Q    10.68    5.388   0.0228 *
 #+END_LaTeX
 
 Table\mtilde\ref{tab:graph500_anova_full} shows the ANOVA for the full
-factorial experiments. The minimal model $E+I+J+L*Q$ for both energy
-and time has been used to correlate results. Region Q has no impact in
-runtime and energy, in low or high frequency.
-Regions E, I, J, and L should be kept
-in high frequency since they affect execution time, with the expense
-of also affecting energy consumption. ANOVA also indicates an
-interaction (with 90% of chance for energy, and 95% for time) between
-regions L and Q.
-This indicates that the frequency choice for both regions should be done
-together, keeping both at the same frequency.
+factorial experiments. Regions E, I, J and L affect execution time and energy
+consumption at a 99.9% confidence level.
+Figure\mtilde\ref{fig:graph500_pareto} presents the Pareto plot showing
+the correlation between energy savings (in the Y axis) and execution
+time (in X).
+The blue line represents the Pareto front, connecting the
+best time-energy trade-offs. Each point is the average of 50
+executions. An ellipse around each point represents the confidence
+region in the bivariate space according to a 99% confidence level. The
+\textsc{HIGH} and \textsc{LOW} labels indicate points where all regions are in
+the high and low frequency. Pareto points are labeled with the
+corresponding high (+) and low (-) frequency configuration for the E,
+I, J and L parallel regions, in that order.
+
 
 #+begin_src R :results output :session :exports none
-summary(aov(data=get_experiments('data/graph500-full.csv'), energy ~ E+I+J+L*Q));
+summary(aov(data=graph500Full, energy ~ E+I+J+L));
 #+end_src
 
 #+RESULTS:
-#+begin_example
-             Df   Sum Sq Mean Sq F value Pr(>F)    
-E             1  1361120 1361120  71.871 <2e-16 ***
-I             1    98609   98609   5.207 0.0228 *  
-J             1  4971231 4971231 262.494 <2e-16 ***
-L             1  3017594 3017594 159.337 <2e-16 ***
-Q             1      183     183   0.010 0.9217    
-L:Q           1    68793   68793   3.632 0.0571 .  
-Residuals   633 11988059   18938                   
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-#+end_example
+:              Df  Sum Sq Mean Sq F value   Pr(>F)    
+: E             1 1125060 1125060  136.64  < 2e-16 ***
+: I             1  254662  254662   30.93 3.76e-08 ***
+: J             1 4067002 4067002  493.94  < 2e-16 ***
+: L             1 4265959 4265959  518.10  < 2e-16 ***
+: Residuals   731 6018912    8234                     
+: ---
+: Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 #+begin_src R :results output :session :exports none
-summary(aov(data=get_experiments('data/graph500-full.csv'), time ~ E+I+J+L*Q));
+summary(aov(data=graph500Full, time ~ E+I+J+L));
 #+end_src
 
 #+RESULTS:
-#+begin_example
-             Df Sum Sq Mean Sq F value   Pr(>F)    
-E             1   36.2    36.2  12.091 0.000541 ***
-I             1  665.0   665.0 222.344  < 2e-16 ***
-J             1  199.6   199.6  66.748 1.68e-15 ***
-L             1   41.5    41.5  13.871 0.000213 ***
-Q             1    0.1     0.1   0.018 0.893777    
-L:Q           1   18.5    18.5   6.174 0.013221 *  
-Residuals   633 1893.2     3.0                     
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-#+end_example
+:              Df Sum Sq Mean Sq F value   Pr(>F)    
+: E             1  118.9   118.9  127.66  < 2e-16 ***
+: I             1  692.8   692.8  743.71  < 2e-16 ***
+: J             1  350.9   350.9  376.63  < 2e-16 ***
+: L             1   31.8    31.8   34.15 7.68e-09 ***
+: Residuals   731  681.0     0.9                     
+: ---
+: Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 #+BEGIN_LaTeX
 \begin{table}[tb]
@@ -4199,48 +4194,32 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 \noindent
 %{\bf Energy} & {\bf Time} \\\toprule
 \begin{minipage}{\linewidth}
-\prettysmallbis\begin{verbatim}
-      Sum Sq  F value Pr(>F)    
-E    1361120   71.871 <2e-16 ***
-I      98609    5.207 0.0228 *  
-J    4971231  262.494 <2e-16 ***
-L    3017594  159.337 <2e-16 ***
-Q        183    0.010 0.9217    
-L:Q    68793    3.632 0.0571 .  
+\prettysmallbistwo\begin{verbatim}
+   Sum Sq F value   Pr(>F)    
+E 1125060  136.64  < 2e-16 ***
+I  254662   30.93 3.76e-08 ***
+J 4067002  493.94  < 2e-16 ***
+L 4265959  518.10  < 2e-16 ***
 \end{verbatim}
 \end{minipage}
 &
 \begin{minipage}{\linewidth}
-\prettysmallbis\begin{verbatim}
-     Sum Sq F value   Pr(>F)    
-E      36.2   12.091 0.000541 ***
-I     665.0  222.344  < 2e-16 ***
-J     199.6   66.748 1.68e-15 ***
-L      41.5   13.871 0.000213 ***
-Q       0.1    0.018 0.893777    
-L:Q    18.5    6.174 0.013221 *  
+\prettysmallbistwo\begin{verbatim}
+   Sum Sq Mean Sq F value   Pr(>F)    
+E   118.9  127.66  < 2e-16 ***
+I   692.8  743.71  < 2e-16 ***
+J   350.9  376.63  < 2e-16 ***
+L    31.8   34.15 7.68e-09 ***
 \end{verbatim}
 \end{minipage}\\\bottomrule
 \end{tabular}
 \end{table}
 #+END_LaTeX
 
-Figure\mtilde\ref{fig:graph500_pareto} presents Pareto plots showing
-the correlation between energy savings (in the Y axis) and execution
-time (in X).
-The blue line represents the Pareto front, connecting the
-best time-energy trade-offs. Each point is the average of 50
-executions. An ellipse around each point represent the confidence
-region in the bivariate space according to a 95% confidence level. The
-\textsc{HIGH} and \textsc{LOW} labels indicate points where all regions are in
-the high and low frequency. Pareto points are labeled with the
-corresponding high (+) and low (-) frequency configuration for the E,
-I, J, L and Q parallel regions, in that order.
-
 #+BEGIN_LaTeX
 \begin{figure}[tb]
 \centering
-\includegraphics[width=.48\linewidth]{graph500-pareto-zoom-crop}
+\includegraphics[width=\linewidth]{graph500-pareto-zoom-crop}
 \caption{Time-Energy Pareto plot containing the results for the Graph500 benchmark.}
 \label{fig:graph500_pareto}
 \end{figure}
@@ -4252,42 +4231,43 @@ region-based trade-offs. Table\mtilde\ref{tab:graph500_results} details
 the region-based points against \textsc{HIGH} (at the left)
 and \textsc{LOW} (right).  Most of the region-based points in the
 Pareto front, when compared to HIGH, offer more energy reduction than
-performance loss. The only exception is the configuration
-~++-++~ whose execution time loss against \textsc{HIGH}
+performance loss. The only exception is the configuration ~(+ - - -)~ whose execution time loss against \textsc{HIGH}
 is larger than gains in energy consumption. Comparing to \textsc{LOW},
 the more interesting result comes from configuration
-~-+--+~: so setting only regions I and Q to the high
-frequency gives an execution time reduction of 5.59% with
-non-significant difference in energy consumption.
+~(+ + - -)~: so setting only regions E and I to the high
+frequency gives an execution time reduction of 7.0% while increasing
+energy consumption by 2.4%.
 Remaining comparison against \textsc{LOW}
-shows that runtime gains are always greater than the
+show that runtime gains are always greater than the
 increase in energy.
 Next section shows the Pareto front results of six other benchmarks.
 
 # Pareto points:
-# +++−−
-# ++−++
-# −++−−
-# ++−−−
-# −+−−+
+# ++++
+# +++-
+# -++-
+# ++--
+# -+--
+# +---
+# ----
 
 #+begin_src R :results output :session :exports none
 # reference is HIGH and LOW on Full
-k <- ddply(graph500Full, .(E,I,J,L,Q), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
-HIGHtime <-   k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1 & k$Q == 1,]$avgtime;
-HIGHenergy <- k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1 & k$Q == 1,]$avgenergy;
-LOWtime <-   k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1 & k$Q == -1,]$avgtime;
-LOWenergy <- k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1 & k$Q == -1,]$avgenergy;
+k <- ddply(graph500Full, .(E,I,J,L), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
+HIGHtime <-   k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1,]$avgtime;
+HIGHenergy <- k[k$E == 1 & k$I == 1 & k$J == 1 & k$L == 1,]$avgenergy;
+LOWtime <-   k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1,]$avgtime;
+LOWenergy <- k[k$E == -1 & k$I == -1 & k$J == -1 & k$L == -1,]$avgenergy;
 print(paste("Number of experiments:",k$n[1]));
 # summarize data frame
-g <- ddply(graph500Full, .(E,I,J,L,Q), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
+g <- ddply(graph500Full, .(E,I,J,L), summarize, n=length(time), avgtime=mean(time), avgenergy=mean(energy));
 g <- g[ # select points belonging to pareto (got from plot)
-     (g$E ==  1 & g$I ==  1 & g$J ==  1 & g$L == -1 & g$Q == -1) | # +++--
-     (g$E ==  1 & g$I ==  1 & g$J == -1 & g$L ==  1 & g$Q ==  1) | # ++-++
-     (g$E == -1 & g$I ==  1 & g$J ==  1 & g$L == -1 & g$Q == -1) | # -++--
-     (g$E ==  1 & g$I ==  1 & g$J == -1 & g$L == -1 & g$Q == -1) | # ++---
-     (g$E == -1 & g$I ==  1 & g$J == -1 & g$L == -1 & g$Q ==  1),] # −+−−+
-m <- ddply(g, .(E,I,J,L,Q), summarize,
+     (g$E ==  1 & g$I ==  1 & g$J ==  1 & g$L == -1) | # +++-
+     (g$E == -1 & g$I ==  1 & g$J ==  1 & g$L == -1) | # -++-
+     (g$E ==  1 & g$I ==  1 & g$J == -1 & g$L == -1) | # ++--
+     (g$E == -1 & g$I ==  1 & g$J == -1 & g$L == -1) | # -+--
+     (g$E ==  1 & g$I == -1 & g$J == -1 & g$L == -1),] # +−−-
+m <- ddply(g, .(E,I,J,L), summarize,
       HRT=round((avgtime-HIGHtime)/HIGHtime*100,2),
       HRE=round((avgenergy-HIGHenergy)/HIGHenergy*100,2),
       LRT=round((avgtime-LOWtime)/LOWtime*100,2),
@@ -4299,12 +4279,12 @@ m
 
 #+RESULTS:
 : [1] "Number of experiments: 46"
-:    E I  J  L  Q  HRT   HRE   LRT  LRE
-: 1 -1 1 -1 -1  1 6.82 -9.19 -5.59 0.12
-: 2 -1 1  1 -1 -1 4.20 -4.66 -7.91 5.11
-: 3  1 1 -1 -1 -1 5.80 -6.16 -6.50 3.46
-: 4  1 1 -1  1  1 3.80 -3.63 -8.26 6.25
-: 5  1 1  1 -1 -1 2.31 -2.55 -9.57 7.44
+:    E  I  J  L  HRT   HRE   LRT  LRE
+: 1 -1  1 -1 -1 8.18 -8.39 -3.67 1.60
+: 2 -1  1  1 -1 3.51 -5.28 -7.82 5.05
+: 3  1 -1 -1 -1 9.74 -8.46 -2.28 1.52
+: 4  1  1 -1 -1 4.42 -7.70 -7.02 2.37
+: 5  1  1  1 -1 1.50 -3.41 -9.62 7.12
 
 #+BEGIN_LaTeX
 \begin{table}[tb]
@@ -4313,14 +4293,12 @@ m
 \label{tab:graph500_results}
 \vspace{-\baselineskip}
 \begin{tabularx}{\textwidth}{cXccXcc}\toprule
-\texttt{\textbf{E I J L Q}} &\ & {\bf Time (\%{\scriptsize /High})} & {\bf Energy (\%{\scriptsize /High})} &\ & {\bf Time (\%{\scriptsize /Low})} & {\bf Energy (\%{\scriptsize /Low})} \\\toprule
-
-\texttt{- + - - +} && 6.82& -9.19&& -5.59& 0.12\\
-\texttt{+ + - - -} && 5.80& -6.16&& -6.50& 3.46\\
-\texttt{- + + - -} && 4.20& -4.66&& -7.91& 5.11\\
-\texttt{+ + - + +} && 3.80& -3.63&& -8.26& 6.25\\
-\texttt{+ + + - -} && 2.31& -2.55&& -9.57& 7.44
-
+\texttt{\textbf{E I J L}} &\ & {\bf Time (\%{\scriptsize /High})} & {\bf Energy (\%{\scriptsize /High})} &\ & {\bf Time (\%{\scriptsize /Low})} & {\bf Energy (\%{\scriptsize /Low})} \\\toprule
+\texttt{- + - -} && 8.18 & -8.39 && -3.67 & 1.60\\
+\texttt{- + + -} && 3.51 & -5.28 && -7.82 & 5.05\\
+\texttt{+ - - -} && 9.74 & -8.46 && -2.28 & 1.52\\
+\texttt{+ + - -} && 4.42 & -7.70 && -7.02 & 2.37\\
+\texttt{+ + + -} && 1.50 & -3.41 && -9.62 & 7.12
 \\\bottomrule
 \end{tabularx}
 \end{table}
@@ -4447,11 +4425,11 @@ r;
 graph500
 #+begin_src R :results output :session :exports none
 d <- graph500Full
-sel <- .(E,I,J,L,Q);
+sel <- .(E,I,J,L);
 g <- ddply(d, sel, summarize, n=length(time),
      avgtime=mean(time), avgenergy=mean(energy));
-best <- g[g$E==-1 & g$I== 1 & g$J==-1 & g$L==-1 & g$Q== 1,]
-low  <- g[g$E==-1 & g$I==-1 & g$J==-1 & g$L==-1 & g$Q==-1,]
+best <- g[g$E== 1 & g$I== 1 & g$J==-1 & g$L==-1,]
+low  <- g[g$E==-1 & g$I==-1 & g$J==-1 & g$L==-1,]
 
 r <- c(
     (best$avgtime   - low$avgtime  ) / low$avgtime,
@@ -4461,8 +4439,8 @@ r;
 #+end_src
 
 #+RESULTS:
-:         time       energy 
-: -0.055873684  0.001238474
+:        time      energy 
+: -0.07017802  0.02367028
 
 hpccg
 #+begin_src R :results output :session :exports none
@@ -4675,10 +4653,10 @@ p
 
 **** graph500
 
-#+begin_src R :results output graphics :file img/graph500-pareto-zoom.pdf :exports both :width 8 :height 6 :session
+#+begin_src R :results output graphics :file img/graph500-pareto-zoom.pdf :exports both :width 11 :height 6 :session
 dados = graph500Full;
-highl = "+++++";
-lowl  = "-----";
+highl = "++++";
+lowl  = "----";
 
 dfp <- get_pareto (dados, highl, lowl);
 ddf <- my_mean (dados);
@@ -4688,7 +4666,7 @@ hl = hll[hll$label %in% c('HIGH','LOW'),]
 hll = hll[!hll$label %in% c('HIGH','LOW'),]
 
 p <- ggplot()  +
-  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.95,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
+  stat_ellipse_arnaud(data=dados, alpha=.3,geom = "polygon",level=.99,type = "norm", aes(x=time,y=energy,fill=label, color=label)) +
   geom_line(data=dfp, aes(x=time, y=energy, fill=NULL, color=NULL), color="blue") +
   geom_point(data=ddf,aes(x=time, y=energy, color=label)) +
   theme_bw() +
@@ -4698,6 +4676,8 @@ p <- ggplot()  +
   xlab('Time (s)') + ylab('Energy (J)') +
   theme(axis.text=element_text(size=18),axis.title=element_text(size=18)) +
   theme(panel.grid=element_blank()) +
+  theme(legend.title=element_text(size=18)) +
+  theme(legend.text=element_text(size=18)) +
 #  theme(legend.position='none') +
   geom_text_repel(data=hll, aes(x=time, y=energy, label=label),
     size = 7,
@@ -4707,9 +4687,9 @@ p <- ggplot()  +
     segment.color = '#555555',
     segment.size = 0.8,
     arrow = arrow(length = unit(0.01, 'npc')),
-    force = 4.4,
-    max.iter = 2e1,
-    nudge_x = -1, nudge_y = -30) +
+    force = 5,
+    max.iter = 3e2,
+    nudge_x = -.6, nudge_y=-40) +
   geom_text_repel(data=hl, aes(x=time, y=energy, label=label),
     size = 5,
     fontface = 'bold',
@@ -4945,7 +4925,7 @@ methodology enables the discovery of different time-energy
 trade-offs: for MiniFE, we have found region-based frequency
 configurations that enable a 9.27% improvement in energy with no
 significant change in runtime; and for Graph500, a time reduction of
-5.59% with no significant change in energy consumption, when
+7.0% with an increase of 2.4% in energy consumption, when
 compared with using the lowest frequency for all regions.
 In the other benchmarks, per-region frequency scaling resulted in
 little to no energy improvements when compared against using only

@@ -3247,6 +3247,8 @@ library(FrF2)
 library(plyr)
 
 get_label = function(d){
+# creates labels consisting of "+" and "-" according to
+# which regions use the high or low frequency
   e = d[,which(names(d) %in% get_regions(d))]
   if(typeof(e)=='list')
     s = by(e, 1:nrow(e),   function(x){paste(x,collapse='')})
@@ -3328,7 +3330,7 @@ remove_outliers2=function(d, bycol, percent){
 
 get_experiments = function(inputFiles){
 # reads experimental results from a list of files
-# each file is considered to be from a different input
+# each file is considered to use a different input
 # results from different inputs are added together
   if('character' == typeof(inputFiles))
     inputFiles = c(inputFiles)
@@ -3556,6 +3558,8 @@ get_all_baseline = function(name,freqs){
     b[[x]] = as.factor(b[[x]])
   return(b)
 }
+
+# load execution data
 
 # minifeopt
 minifeoptFull = get_experiments('data/minifeopt.csv')

@@ -20,7 +20,8 @@
 #+LATEX_HEADER: \usepackage{algorithm}
 #+LATEX_HEADER: \usepackage{algorithmic}
 #+LATEX_HEADER: \newcommand{\prettysmall}{\fontsize{6.5}{6.5}\selectfont}
-#+LATEX_HEADER: \newcommand{\prettysmallbis}{\fontsize{7}{7}\selectfont}
+#+LATEX_HEADER: \newcommand{\prettysmallbis}{\fontsize{8.9}{8.9}\selectfont}
+#+LATEX_HEADER: \newcommand{\prettysmallbistwo}{\fontsize{8.5}{8.5}\selectfont}
 #+LATEX_HEADER: \newcommand{\mtilde}{~}
 
 #+LATEX_HEADER: \usepackage{llncsdoc}

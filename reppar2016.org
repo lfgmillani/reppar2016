@@ -41,7 +41,7 @@
 #+BEGIN_LaTeX
 \title{Computation-Aware Dynamic Frequency Scaling: Parsimonious Evaluation of the Time-Energy Trade-off Using Design of Experiments}
 \author{Luis Felipe Millani, Lucas Mello Schnorr}
-\institute{Informatics Institute –- Federal University of Rio Grande do Sul (UFRGS) \\
+\institute{Graduate Program in Computer Science (PPGC) \\ Informatics Institute –- Federal University of Rio Grande do Sul (UFRGS) \\
 Caixa Postal 15064 –- CEP 91501-970 Porto Alegre -- RS -- Brazil\\
 \email{\{lfgmillani,schnorr\}@inf.ufrgs.br}}
 \maketitle

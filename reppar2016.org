@@ -3704,9 +3704,10 @@ methodology. Section\mtilde\ref{sec:evaluation}
 has the evaluation of seven benchmarks.
 Conclusion and future work appears
 in Section\mtilde\ref{sec:conclusion}.
+The source code of this paper, including all data that has been used,
+is publicly available as an org file on
+[[https://github.com/lfgmillani/reppar2016][https://github.com/lfgmillani/reppar2016]]/.
 
-All data used in this paper, and the org-mode file used to generate
-it, is publicly available on [[https://github.com/lfgmillani/reppar2016][https://github.com/lfgmillani/reppar2016]].
 * Related Work
 \label{sec:relatedwork}
 

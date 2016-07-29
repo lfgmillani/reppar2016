@@ -3743,7 +3743,7 @@ models\mtilde\cite{powerpack}. Preparatory measurements
 with all available frequencies are also conducted by
 Dick et al.\mtilde\cite{Dick2015} on a numerical simulation code to deduce
 the best frequencies in a per-routine basis.
-* Background of Design of Experiments
+* Background on Design of Experiments
 \label{sec:background}
 
 In Design of Experiments (DoE), factors are variables that can affect

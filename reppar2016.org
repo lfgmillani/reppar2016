@@ -3409,6 +3409,9 @@ get_pareto <- function (data, label_high, label_low)
 {
   ddf <- my_mean (data);
   dfp <- calculate_pareto (ddf$time, ddf$energy, ddf$label);
+  dfp$label = as.character(dfp$label)
+  label_high = as.character(label_high)
+  label_low = as.character(label_low)
   # check if pareto has label_high, if it does, replace by HIGH
   dfp$label[dfp$label == label_high] <- "HIGH";
   dfp$label[dfp$label == label_low] <- "LOW";

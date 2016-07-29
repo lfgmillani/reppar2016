@@ -4942,10 +4942,10 @@ execute each parallel code region.
 
 #+LATEX:\section*{Acknowledgements}
 #+LATEX:\vspace{-\baselineskip}
-We would like to thanks CAPES and CNPq for partially funding this
-work. We would also like to thanks Arnaud Legrand for his ideas on
+We thank CAPES and CNPq for partially funding this
+work. In addition, we thank Arnaud Legrand for his ideas on
 design of experiments that inspired us to develop the work of this
-paper, and also for his series of lectures on Scientific Methodology
+paper, and for his series of lectures on Scientific Methodology
 and Performance Evaluation (SMPE).
 
 #+LATEX: \bibliographystyle{splncs03}
